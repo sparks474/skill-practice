@@ -1,3 +1,6 @@
+import type { Keybinds } from '../types'
+import { getSwapPartner } from '../data/skillSlots'
+
 /** KeyboardEvent から保存用のキー文字列を正規化 */
 export function normalizeKeyEvent(e: KeyboardEvent): string {
   const key = e.key
@@ -13,14 +16,25 @@ export function formatKeyLabel(key: string | undefined): string {
   return key
 }
 
-/** keybinds から skillId を逆引き */
+/**
+ * keybinds から skillId を逆引き。
+ * 置き換えペアがある場合は activeBySlot の現在スキルを返す。
+ */
 export function skillIdForKey(
-  keybinds: Record<string, { key?: string; mouse?: boolean }>,
+  keybinds: Keybinds,
   key: string,
+  activeBySlot?: Record<string, string>,
 ): string | null {
   const normalized = key.toLowerCase()
   for (const [skillId, bind] of Object.entries(keybinds)) {
-    if (bind.key && bind.key.toLowerCase() === normalized) return skillId
+    if (bind.unused) continue
+    if (!bind.key || bind.key.toLowerCase() !== normalized) continue
+
+    const partner = getSwapPartner(keybinds, skillId)
+    if (!partner || !activeBySlot) return skillId
+
+    const slot = [skillId, partner].sort().join('|')
+    return activeBySlot[slot] ?? skillId
   }
   return null
 }

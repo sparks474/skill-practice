@@ -1,5 +1,6 @@
 import type { Keybinds } from '../types'
 import { SKILLS } from './skills'
+import { DEFAULT_SWAP_PAIRS } from './skillSlots'
 
 /** よく使うアクション向けの初期キー配置 */
 const PRESET: Keybinds = {
@@ -9,9 +10,7 @@ const PRESET: Keybinds = {
   drill: { key: '4' },
   air_anchor: { key: '5' },
   chain_saw: { key: '6' },
-  excavator: { key: '7' },
   blazing_shot: { key: 'f' },
-  full_metal_burst: { key: 'g' },
   reassemble: { key: 'q' },
   hypercharge: { key: 'c' },
   barrel_stabilizer: { key: 'v' },
@@ -28,5 +27,22 @@ export function createDefaultKeybinds(): Keybinds {
       ? { ...PRESET[skill.id] }
       : { mouse: true }
   }
+
+  for (const [a, b] of DEFAULT_SWAP_PAIRS) {
+    const sharedKey = binds[a]?.key ?? binds[b]?.key
+    binds[a] = {
+      ...binds[a],
+      swapWith: b,
+      key: sharedKey,
+      mouse: binds[a]?.mouse ?? true,
+    }
+    binds[b] = {
+      ...binds[b],
+      swapWith: a,
+      key: sharedKey,
+      mouse: binds[b]?.mouse ?? binds[a]?.mouse ?? true,
+    }
+  }
+
   return binds
 }

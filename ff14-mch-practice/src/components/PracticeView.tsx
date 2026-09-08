@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { getSkill } from '../data/skills'
+import {
+  afterSuccessfulCast,
+  createInitialSwapActive,
+  effectiveKey,
+  getSwapPartner,
+  slotIdFor,
+} from '../data/skillSlots'
 import { PracticeRuntime, type RuntimeSnapshot } from '../engine/runtime'
 import { formatKeyLabel, normalizeKeyEvent, skillIdForKey } from '../input/keys'
 import type {
@@ -47,18 +54,47 @@ export function PracticeView({
   const startWallRef = useRef<number>(0)
   const onFinishRef = useRef(onFinish)
   onFinishRef.current = onFinish
+  const swapActiveRef = useRef<Record<string, string>>(
+    createInitialSwapActive(keybinds),
+  )
   const [snap, setSnap] = useState<RuntimeSnapshot | null>(null)
   const [running, setRunning] = useState(false)
+  const [swapActive, setSwapActive] = useState<Record<string, string>>(() =>
+    createInitialSwapActive(keybinds),
+  )
 
   const hotbar = useMemo(() => {
     const ids = new Set<string>([
       ...HOTBAR_IDS,
       ...rotation.steps.map((s) => s.skillId),
     ])
-    return [...ids]
+    const result: string[] = []
+    const seenSlots = new Set<string>()
+
+    for (const id of ids) {
+      if (keybinds[id]?.unused) continue
+      const skill = getSkill(id)
+      if (!skill) continue
+
+      const partner = getSwapPartner(keybinds, id)
+      if (partner) {
+        const slot = slotIdFor(id, partner)
+        if (seenSlots.has(slot)) continue
+        seenSlots.add(slot)
+        const activeId = swapActive[slot] ?? id
+        const activeSkill = getSkill(activeId)
+        if (activeSkill && !keybinds[activeId]?.unused) {
+          result.push(activeId)
+        }
+        continue
+      }
+      result.push(id)
+    }
+
+    return result
       .map((id) => getSkill(id))
       .filter((s): s is NonNullable<typeof s> => Boolean(s))
-  }, [rotation.steps])
+  }, [rotation.steps, keybinds, swapActive])
 
   function sync() {
     const rt = runtimeRef.current
@@ -66,18 +102,42 @@ export function PracticeView({
     setSnap(rt.getSnapshot())
   }
 
+  function applyInput(skillId: string) {
+    const rt = runtimeRef.current
+    if (!rt || !running) return
+    const beforeEvents = rt.getSnapshot().events.length
+    const elapsed = performance.now() - startWallRef.current
+    rt.advanceTo(elapsed)
+    rt.handleInput(skillId)
+    const after = rt.getSnapshot()
+    const newEvents = after.events.slice(beforeEvents)
+    const success = newEvents.find(
+      (e) => e.type === 'success' && e.skillId === skillId,
+    )
+    if (success) {
+      setSwapActive((prev) => {
+        const next = afterSuccessfulCast(prev, skillId, keybinds)
+        swapActiveRef.current = next
+        return next
+      })
+    }
+    setSnap(after)
+  }
+
   function start() {
     runtimeRef.current = new PracticeRuntime(rotation, config)
     startWallRef.current = performance.now()
+    const initial = createInitialSwapActive(keybinds)
+    swapActiveRef.current = initial
+    setSwapActive(initial)
     setRunning(true)
     sync()
   }
 
   useEffect(() => {
     start()
-    // 回転／設定が変わったら練習をやり直す
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rotation.id, config])
+  }, [rotation.id, config, keybinds])
 
   useEffect(() => {
     if (!running) return
@@ -86,8 +146,22 @@ export function PracticeView({
       const rt = runtimeRef.current
       if (!rt) return
       const elapsed = performance.now() - startWallRef.current
+      const beforeEvents = rt.getSnapshot().events.length
       rt.advanceTo(elapsed)
       const s = rt.getSnapshot()
+      // キュー発火の成功でも置き換えを進める
+      const newEvents = s.events.slice(beforeEvents)
+      for (const e of newEvents) {
+        if (e.type === 'success') {
+          const next = afterSuccessfulCast(
+            swapActiveRef.current,
+            e.skillId,
+            keybinds,
+          )
+          swapActiveRef.current = next
+          setSwapActive(next)
+        }
+      }
       setSnap(s)
       if (s.finished) {
         setRunning(false)
@@ -98,7 +172,7 @@ export function PracticeView({
     }
     raf = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf)
-  }, [running])
+  }, [running, keybinds])
 
   useEffect(() => {
     if (!running) return
@@ -106,29 +180,20 @@ export function PracticeView({
       if (e.repeat) return
       if (e.metaKey || e.ctrlKey || e.altKey) return
       const key = normalizeKeyEvent(e)
-      const skillId = skillIdForKey(keybinds, key)
+      const skillId = skillIdForKey(keybinds, key, swapActiveRef.current)
       if (!skillId) return
       e.preventDefault()
-      const rt = runtimeRef.current
-      if (!rt) return
-      const elapsed = performance.now() - startWallRef.current
-      rt.advanceTo(elapsed)
-      rt.handleInput(skillId)
-      sync()
+      applyInput(skillId)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [running, keybinds])
 
   function clickSkill(skillId: string) {
     const bind = keybinds[skillId]
-    if (bind?.key && bind.mouse === false) return
-    const rt = runtimeRef.current
-    if (!rt || !running) return
-    const elapsed = performance.now() - startWallRef.current
-    rt.advanceTo(elapsed)
-    rt.handleInput(skillId)
-    sync()
+    if (effectiveKey(keybinds, skillId) && bind?.mouse === false) return
+    applyInput(skillId)
   }
 
   if (!snap) return null
@@ -249,17 +314,20 @@ export function PracticeView({
 
       <section className="hotbar" aria-label="ホットバー">
         {hotbar.map((skill) => {
-          const bind = keybinds[skill.id]
+          const partner = getSwapPartner(keybinds, skill.id)
           const isNext = skill.id === expectedId
           return (
             <button
-              key={skill.id}
+              key={partner ? slotIdFor(skill.id, partner) : skill.id}
               type="button"
-              className={`hotbar-btn ${isNext ? 'next' : ''}`}
+              className={`hotbar-btn ${isNext ? 'next' : ''} ${partner ? 'swappable' : ''}`}
               onClick={() => clickSkill(skill.id)}
             >
               <span className="hotbar-name">{skill.nameJa}</span>
-              <span className="hotbar-key">{formatKeyLabel(bind?.key)}</span>
+              <span className="hotbar-key">
+                {formatKeyLabel(effectiveKey(keybinds, skill.id))}
+                {partner ? ` ↔ ${getSkill(partner)?.nameJa ?? ''}` : ''}
+              </span>
             </button>
           )
         })}

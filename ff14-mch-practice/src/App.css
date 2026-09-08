@@ -237,6 +237,27 @@ select {
   border-bottom: 1px solid var(--line);
 }
 
+.keybind-row.unused {
+  opacity: 0.45;
+}
+
+.keybind-row.unused .keybind-name {
+  text-decoration: line-through;
+}
+
+.swap-select {
+  gap: 6px;
+}
+
+.swap-select select {
+  border: 1px solid var(--line);
+  background: var(--bg1);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 0.25rem 0.4rem;
+  max-width: 12rem;
+}
+
 .step-idx {
   width: 1.5rem;
   color: var(--muted);
@@ -385,6 +406,10 @@ select {
 .hotbar-btn.next {
   border-color: var(--accent);
   box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.hotbar-btn.swappable .hotbar-key {
+  color: #b8a67a;
 }
 
 .hotbar-name {
