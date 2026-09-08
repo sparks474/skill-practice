@@ -67,6 +67,11 @@ export type EngineConfig = {
    * 直前に成功したスキルと同じ入力を、発動からこの時間は押し間違いにしない。
    */
   remashGraceMs: number
+  /**
+   * 発動タイミングの遊び（ms）。
+   * ready からこの時間以内の遅れは空き時間に含めない（FPS／遅延の誤差吸収）。
+   */
+  activationSlackMs: number
 }
 
 /** 移動キー（練習中は入力しても無視・ミス判定なし） */
@@ -147,6 +152,8 @@ export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
   queueWindowMs: 500,
   /** 硬直(670)＋指を止める余裕 */
   remashGraceMs: 1000,
+  /** 予約発火・フレーム遅れの誤差 */
+  activationSlackMs: 100,
 }
 
 /** FF14 既定に近い WASD */

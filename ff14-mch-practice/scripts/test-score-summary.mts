@@ -71,7 +71,12 @@ function assert(cond: boolean, msg: string) {
     (e) => e.type === 'success' && e.skillId === 'air_anchor',
   )
   if (aa && aa.type === 'success') {
+    // ready からの生遅れは大きいが、遊び 100ms を差し引いた値が記録される
     assert(aa.idleMs > 0, `late air_anchor has idleMs>0 (${aa.idleMs})`)
+    assert(
+      aa.idleMs < 3000,
+      `slack applied (idle < raw ~2330+; got ${aa.idleMs})`,
+    )
     assert(
       summary.idleWasteMs === aa.idleMs,
       `idleWaste equals AA idle only (first excluded)`,
@@ -79,6 +84,28 @@ function assert(cond: boolean, msg: string) {
   } else {
     // if not success yet, still ok — first press only
     assert(true, 'skipped late AA assert (no success yet)')
+  }
+}
+
+{
+  // 遊び時間以内は空き 0
+  const rt = new PracticeRuntime(SAMPLE_ROTATION, {
+    ...DEFAULT_ENGINE_CONFIG,
+    activationSlackMs: 100,
+  })
+  rt.advanceTo(0)
+  rt.handleInput('reassemble')
+  // air_anchor: press slightly after ready within slack
+  // reassemble is ability — air_anchor ready after anim lock 670
+  const readyGuess = 670
+  rt.advanceTo(readyGuess + 50) // 50ms late < 100 slack
+  rt.handleInput('air_anchor')
+  const aa = rt.getSummary().events.find(
+    (e) => e.type === 'success' && e.skillId === 'air_anchor',
+  )
+  assert(aa?.type === 'success', 'air_anchor succeeded')
+  if (aa && aa.type === 'success') {
+    assert(aa.idleMs === 0, `within slack idleMs=0 (got ${aa.idleMs})`)
   }
 }
 
