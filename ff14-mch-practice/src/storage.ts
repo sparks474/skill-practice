@@ -173,6 +173,8 @@ export function loadConfig(): EngineConfig {
         DEFAULT_ENGINE_CONFIG.defaultAnimationLockMs,
       queueWindowMs:
         parsed.queueWindowMs ?? DEFAULT_ENGINE_CONFIG.queueWindowMs,
+      remashGraceMs:
+        parsed.remashGraceMs ?? DEFAULT_ENGINE_CONFIG.remashGraceMs,
     }
   } catch {
     return { ...DEFAULT_ENGINE_CONFIG }
