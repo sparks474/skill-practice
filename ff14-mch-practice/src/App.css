@@ -92,6 +92,21 @@ select {
   align-items: center;
 }
 
+.practice-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.practice-toggle input {
+  width: auto;
+  margin: 0;
+}
+
 .job-select {
   display: inline-flex;
   align-items: center;

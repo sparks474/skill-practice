@@ -9,6 +9,10 @@ import {
 } from '../data/skillSlots'
 import { PracticeRuntime, type RuntimeSnapshot } from '../engine/runtime'
 import { formatKeyLabel, isMovementKey, normalizeKeyEvent, skillIdForKey } from '../input/keys'
+import {
+  loadHighlightNextHotbar,
+  saveHighlightNextHotbar,
+} from '../storage'
 import type {
   EngineConfig,
   HotbarLayout,
@@ -63,6 +67,9 @@ export function PracticeView({
   const [running, setRunning] = useState(false)
   const [swapActive, setSwapActive] = useState<Record<string, string>>(() =>
     createInitialSwapActive(keybinds),
+  )
+  const [highlightNext, setHighlightNext] = useState(() =>
+    loadHighlightNextHotbar(),
   )
 
   const hotbarCells = useMemo(() => {
@@ -215,6 +222,18 @@ export function PracticeView({
           </p>
         </div>
         <div className="header-actions">
+          <label className="practice-toggle">
+            <input
+              type="checkbox"
+              checked={highlightNext}
+              onChange={(e) => {
+                const on = e.target.checked
+                setHighlightNext(on)
+                saveHighlightNextHotbar(on)
+              }}
+            />
+            次をハイライト
+          </label>
           <button type="button" className="btn ghost" onClick={onAbort}>
             中断
           </button>
@@ -308,7 +327,7 @@ export function PracticeView({
             return <div key={`empty-${index}`} className="hotbar-slot empty" />
           }
           const partner = getSwapPartner(keybinds, skill.id)
-          const isNext = skill.id === expectedId
+          const isNext = highlightNext && skill.id === expectedId
           const cd = snap.cooldowns[skill.id]
           const onCd =
             (cd?.remainingMs ?? 0) > 0 &&

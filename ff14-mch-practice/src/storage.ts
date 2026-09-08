@@ -24,6 +24,7 @@ const CONFIG_KEY = 'ff14-mch-config'
 const MOVEMENT_KEY = 'ff14-mch-movement'
 const HOTBAR_KEY = 'ff14-mch-hotbar'
 const SELECTED_JOB_KEY = 'ff14-practice-selected-job'
+const HIGHLIGHT_NEXT_KEY = 'ff14-practice-highlight-next'
 
 function canUseStorage(): boolean {
   return typeof localStorage !== 'undefined'
@@ -220,6 +221,23 @@ export function loadSelectedJob(): JobId {
 export function saveSelectedJob(jobId: JobId): void {
   if (!canUseStorage()) return
   localStorage.setItem(SELECTED_JOB_KEY, jobId)
+}
+
+/** 練習ホットバーの「次」枠ハイライト（初期 ON） */
+export function loadHighlightNextHotbar(): boolean {
+  if (!canUseStorage()) return true
+  try {
+    const raw = localStorage.getItem(HIGHLIGHT_NEXT_KEY)
+    if (raw === null) return true
+    return raw !== '0' && raw !== 'false'
+  } catch {
+    return true
+  }
+}
+
+export function saveHighlightNextHotbar(enabled: boolean): void {
+  if (!canUseStorage()) return
+  localStorage.setItem(HIGHLIGHT_NEXT_KEY, enabled ? '1' : '0')
 }
 
 /** 移動キーとスキルキーの重複をスキル側から外す */
