@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "simulate": "tsx scripts/simulate-opener.mts"
+    "simulate": "tsx scripts/simulate-opener.mts",
+    "test:keys": "tsx scripts/test-key-resolve.mts"
   },
   "dependencies": {
     "react": "^19.2.8",
