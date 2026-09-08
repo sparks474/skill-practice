@@ -26,6 +26,7 @@ type Props = {
 
 const HOTBAR_IDS = [
   'reassemble',
+  'potion',
   'air_anchor',
   'drill',
   'chain_saw',
