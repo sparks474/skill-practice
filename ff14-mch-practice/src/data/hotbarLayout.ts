@@ -116,9 +116,43 @@ export function resizeHotbarRows(
   layout: HotbarLayout,
   rows: number,
 ): HotbarLayout {
-  const nextRows = Math.max(1, Math.min(4, rows))
+  const nextRows = Math.max(1, Math.min(6, rows))
   const size = layout.cols * nextRows
   const slots = layout.slots.slice(0, size)
   while (slots.length < size) slots.push(null)
   return { cols: layout.cols, rows: nextRows, slots }
+}
+
+export function resizeHotbarCols(
+  layout: HotbarLayout,
+  cols: number,
+): HotbarLayout {
+  const nextCols = Math.max(4, Math.min(16, cols))
+  if (nextCols === layout.cols) return layout
+
+  const { rows, cols: oldCols, slots } = layout
+  const next: (string | null)[] = Array.from(
+    { length: nextCols * rows },
+    () => null,
+  )
+  const overflow: string[] = []
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < oldCols; c++) {
+      const id = slots[r * oldCols + c]
+      if (!id) continue
+      if (c < nextCols) {
+        next[r * nextCols + c] = id
+      } else {
+        overflow.push(id)
+      }
+    }
+  }
+
+  for (const id of overflow) {
+    const empty = next.findIndex((s) => s == null)
+    if (empty >= 0) next[empty] = id
+  }
+
+  return { cols: nextCols, rows, slots: next }
 }

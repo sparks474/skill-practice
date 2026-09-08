@@ -4,6 +4,7 @@ import {
   clearHotbarSlot,
   createDefaultHotbarLayout,
   placeOnHotbar,
+  resizeHotbarCols,
   resizeHotbarRows,
 } from '../data/hotbarLayout'
 import { getSkill, SKILLS } from '../data/skills'
@@ -72,6 +73,22 @@ export function HotbarLayoutEditor({ layout, keybinds, onChange }: Props) {
           <button
             type="button"
             className="btn ghost"
+            onClick={() => onChange(resizeHotbarCols(layout, layout.cols - 1))}
+            disabled={layout.cols <= 4}
+          >
+            列を減らす
+          </button>
+          <button
+            type="button"
+            className="btn ghost"
+            onClick={() => onChange(resizeHotbarCols(layout, layout.cols + 1))}
+            disabled={layout.cols >= 16}
+          >
+            列を増やす
+          </button>
+          <button
+            type="button"
+            className="btn ghost"
             onClick={() => onChange(resizeHotbarRows(layout, layout.rows - 1))}
             disabled={layout.rows <= 1}
           >
@@ -81,10 +98,13 @@ export function HotbarLayoutEditor({ layout, keybinds, onChange }: Props) {
             type="button"
             className="btn ghost"
             onClick={() => onChange(resizeHotbarRows(layout, layout.rows + 1))}
-            disabled={layout.rows >= 4}
+            disabled={layout.rows >= 6}
           >
             行を増やす
           </button>
+          <span className="muted hotbar-size-label">
+            {layout.cols}列 × {layout.rows}行
+          </span>
           <button
             type="button"
             className="btn ghost"
