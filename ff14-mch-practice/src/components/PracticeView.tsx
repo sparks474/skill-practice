@@ -11,6 +11,7 @@ import { PracticeRuntime, type RuntimeSnapshot } from '../engine/runtime'
 import { formatKeyLabel, isMovementKey, normalizeKeyEvent, skillIdForKey } from '../input/keys'
 import type {
   EngineConfig,
+  HotbarLayout,
   Keybinds,
   MovementKeys,
   PracticeSummary,
@@ -21,35 +22,17 @@ type Props = {
   rotation: Rotation
   keybinds: Keybinds
   movementKeys: MovementKeys
+  hotbarLayout: HotbarLayout
   config: EngineConfig
   onFinish: (summary: PracticeSummary) => void
   onAbort: () => void
 }
 
-const HOTBAR_IDS = [
-  'reassemble',
-  'potion',
-  'air_anchor',
-  'drill',
-  'chain_saw',
-  'excavator',
-  'double_check',
-  'checkmate',
-  'barrel_stabilizer',
-  'wildfire',
-  'full_metal_burst',
-  'hypercharge',
-  'blazing_shot',
-  'automaton_queen',
-  'heated_split_shot',
-  'heated_slug_shot',
-  'heated_clean_shot',
-]
-
 export function PracticeView({
   rotation,
   keybinds,
   movementKeys,
+  hotbarLayout,
   config,
   onFinish,
   onAbort,
@@ -67,38 +50,20 @@ export function PracticeView({
     createInitialSwapActive(keybinds),
   )
 
-  const hotbar = useMemo(() => {
-    const ids = new Set<string>([
-      ...HOTBAR_IDS,
-      ...rotation.steps.map((s) => s.skillId),
-    ])
-    const result: string[] = []
-    const seenSlots = new Set<string>()
-
-    for (const id of ids) {
-      if (keybinds[id]?.unused) continue
-      const skill = getSkill(id)
-      if (!skill) continue
-
-      const partner = getSwapPartner(keybinds, id)
+  const hotbarCells = useMemo(() => {
+    return hotbarLayout.slots.map((layoutId) => {
+      if (!layoutId) return null
+      if (keybinds[layoutId]?.unused) return null
+      const partner = getSwapPartner(keybinds, layoutId)
       if (partner) {
-        const slot = slotIdFor(id, partner)
-        if (seenSlots.has(slot)) continue
-        seenSlots.add(slot)
-        const activeId = swapActive[slot] ?? id
-        const activeSkill = getSkill(activeId)
-        if (activeSkill && !keybinds[activeId]?.unused) {
-          result.push(activeId)
-        }
-        continue
+        const slot = slotIdFor(layoutId, partner)
+        const activeId = swapActive[slot] ?? layoutId
+        if (keybinds[activeId]?.unused) return null
+        return getSkill(activeId) ?? null
       }
-      result.push(id)
-    }
-
-    return result
-      .map((id) => getSkill(id))
-      .filter((s): s is NonNullable<typeof s> => Boolean(s))
-  }, [rotation.steps, keybinds, swapActive])
+      return getSkill(layoutId) ?? null
+    })
+  }, [hotbarLayout.slots, keybinds, swapActive])
 
   function sync() {
     const rt = runtimeRef.current
@@ -325,8 +290,17 @@ export function PracticeView({
         </div>
       </section>
 
-      <section className="hotbar" aria-label="ホットバー">
-        {hotbar.map((skill) => {
+      <section
+        className="hotbar hotbar-grid"
+        aria-label="ホットバー"
+        style={{
+          gridTemplateColumns: `repeat(${hotbarLayout.cols}, minmax(0, 1fr))`,
+        }}
+      >
+        {hotbarCells.map((skill, index) => {
+          if (!skill) {
+            return <div key={`empty-${index}`} className="hotbar-slot empty" />
+          }
           const partner = getSwapPartner(keybinds, skill.id)
           const isNext = skill.id === expectedId
           const cd = snap.cooldowns[skill.id]
@@ -335,7 +309,7 @@ export function PracticeView({
             (skill.charges == null || (cd?.charges ?? 0) <= 0)
           return (
             <button
-              key={partner ? slotIdFor(skill.id, partner) : skill.id}
+              key={`${partner ? slotIdFor(skill.id, partner) : skill.id}-${index}`}
               type="button"
               className={`hotbar-btn ${isNext ? 'next' : ''} ${partner ? 'swappable' : ''} ${onCd ? 'on-cd' : ''}`}
               onClick={() => clickSkill(skill.id)}

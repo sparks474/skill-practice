@@ -64,6 +64,13 @@ export type MovementKeys = {
 
 export type MovementDirection = keyof MovementKeys
 
+/** 練習ホットバーのグリッド配置（slots[i] = skillId or null） */
+export type HotbarLayout = {
+  cols: number
+  rows: number
+  slots: (string | null)[]
+}
+
 export type KeybindEntry = {
   key?: string
   mouse?: boolean

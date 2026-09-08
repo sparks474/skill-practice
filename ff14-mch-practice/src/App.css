@@ -384,9 +384,17 @@ select {
 
 .hotbar {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 8px;
   margin-top: 12px;
+}
+
+.hotbar.hotbar-grid {
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+.hotbar-slot.empty {
+  min-height: 4.5rem;
+  border: 1px dashed transparent;
 }
 
 .hotbar-btn {
@@ -399,8 +407,125 @@ select {
   background: var(--bg1);
   color: var(--text);
   border-radius: 6px;
-  padding: 0.55rem 0.65rem;
+  padding: 0.45rem 0.5rem;
   cursor: pointer;
+  min-width: 0;
+}
+
+.hotbar-editor {
+  margin: 28px 0;
+}
+
+.hotbar-editor-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.hotbar-editor-header h2 {
+  margin: 0;
+}
+
+.hotbar-grid.editor {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0;
+}
+
+.hotbar-cell {
+  min-height: 4.2rem;
+  border: 1px dashed var(--line);
+  border-radius: 6px;
+  background: var(--bg1);
+  padding: 4px;
+  display: flex;
+  align-items: stretch;
+}
+
+.hotbar-cell.drag-over {
+  border-color: var(--accent);
+  background: #2a3228;
+}
+
+.hotbar-cell .cell-placeholder {
+  margin: auto;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.hotbar-chip {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg2);
+  padding: 0.35rem 0.4rem;
+  cursor: grab;
+  min-width: 0;
+}
+
+.hotbar-chip.palette {
+  cursor: grab;
+}
+
+.hotbar-chip-name {
+  font-size: 0.75rem;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hotbar-chip-key {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.chip-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.hotbar-trash {
+  border: 1px dashed #6a3a3a;
+  color: #e3a0a0;
+  border-radius: 6px;
+  padding: 10px;
+  text-align: center;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+}
+
+.hotbar-palette {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hotbar-palette li {
+  width: min(160px, 100%);
+}
+
+@media (max-width: 900px) {
+  .hotbar.hotbar-grid,
+  .hotbar-grid.editor {
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  }
 }
 
 .hotbar-btn.next {
