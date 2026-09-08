@@ -122,7 +122,23 @@ export function SettingsView({
             }
           />
         </label>
+        <label>
+          連打猶予 (ms)
+          <input
+            type="number"
+            value={draftConfig.remashGraceMs}
+            onChange={(e) =>
+              setDraftConfig({
+                ...draftConfig,
+                remashGraceMs: Number(e.target.value) || 0,
+              })
+            }
+          />
+        </label>
       </section>
+      <p className="muted result-hint">
+        連打猶予は、スキル発動からその時間だけ「直前と同じスキル」の再入力を押し間違いにしません（硬直より短くしても硬直中は無視します）。
+      </p>
 
       <section>
         <h2>移動キー</h2>

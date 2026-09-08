@@ -56,8 +56,10 @@ type InternalState = {
   events: ScoreEvent[]
   lastFeedback: string | null
   started: boolean
-  /** 直前に成功発動したスキル（硬直中の連打無視用） */
+  /** 直前に成功発動したスキル（連打猶予用） */
   lastCastSkillId: string | null
+  /** この時刻未満は lastCastSkillId の再入力を無視 */
+  sameSkillIgnoreUntil: number
 }
 
 function clampGauge(n: number): number {
@@ -96,6 +98,7 @@ export class PracticeRuntime {
       lastFeedback: null,
       started: false,
       lastCastSkillId: null,
+      sameSkillIgnoreUntil: 0,
     }
   }
 
@@ -188,13 +191,13 @@ export class PracticeRuntime {
     }
 
     if (skillId !== expected) {
-      // A→B で A 連打の残り: 直前スキルの硬直中は押し間違いにしない
+      // A→B で A 連打の残り: 発動後の連打猶予中は押し間違いにしない
       if (
         this.state.lastCastSkillId != null &&
         skillId === this.state.lastCastSkillId &&
-        this.state.nowMs < this.state.animLockUntil
+        this.state.nowMs < this.state.sameSkillIgnoreUntil
       ) {
-        return '硬直中（無視）'
+        return '連打猶予（無視）'
       }
       const event: ScoreEvent = {
         type: 'wrong_input',
@@ -424,6 +427,12 @@ export class PracticeRuntime {
       skill.animationLockMs ?? this.config.defaultAnimationLockMs
     this.state.animLockUntil = this.state.nowMs + lock
     this.state.lastCastSkillId = skill.id
+    // 硬直と連打猶予の長い方まで、同じスキル再入力を無視
+    const grace = Math.max(0, this.config.remashGraceMs)
+    this.state.sameSkillIgnoreUntil = Math.max(
+      this.state.animLockUntil,
+      this.state.nowMs + grace,
+    )
 
     if (skill.castMs > 0) {
       this.state.castUntil = this.state.nowMs + skill.castMs

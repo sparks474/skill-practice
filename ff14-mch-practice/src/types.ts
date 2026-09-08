@@ -62,6 +62,11 @@ export type Rotation = {
 export type EngineConfig = {
   defaultAnimationLockMs: number
   queueWindowMs: number
+  /**
+   * 発動直後の連打猶予（ms）。
+   * 直前に成功したスキルと同じ入力を、発動からこの時間は押し間違いにしない。
+   */
+  remashGraceMs: number
 }
 
 /** 移動キー（練習中は入力しても無視・ミス判定なし） */
@@ -140,6 +145,8 @@ export type PracticeSummary = {
 export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
   defaultAnimationLockMs: 670,
   queueWindowMs: 500,
+  /** 硬直(670)＋指を止める余裕 */
+  remashGraceMs: 1000,
 }
 
 /** FF14 既定に近い WASD */
