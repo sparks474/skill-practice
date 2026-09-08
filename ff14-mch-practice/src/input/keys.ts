@@ -1,5 +1,5 @@
 import type { Keybinds, MovementKeys } from '../types'
-import { getSwapPartner } from '../data/skillSlots'
+import { getSwapPartner, slotIdFor } from '../data/skillSlots'
 
 /** KeyboardEvent から保存用のキー文字列を正規化 */
 export function normalizeKeyEvent(e: KeyboardEvent): string {
@@ -35,23 +35,36 @@ export function isMovementKey(
 
 /**
  * keybinds から skillId を逆引き。
- * 置き換えペアがある場合は activeBySlot の現在スキルを返す。
+ * - 同じキーの置き換えペアでは expected を優先（次表示と一致させる）
+ * - それ以外はホットバーの現在表示（activeBySlot）を返す
  */
 export function skillIdForKey(
   keybinds: Keybinds,
   key: string,
   activeBySlot?: Record<string, string>,
+  expectedSkillId?: string | null,
 ): string | null {
   const normalized = key.toLowerCase()
+  const matches: string[] = []
   for (const [skillId, bind] of Object.entries(keybinds)) {
     if (bind.unused) continue
     if (!bind.key || bind.key.toLowerCase() !== normalized) continue
-
-    const partner = getSwapPartner(keybinds, skillId)
-    if (!partner || !activeBySlot) return skillId
-
-    const slot = [skillId, partner].sort().join('|')
-    return activeBySlot[slot] ?? skillId
+    matches.push(skillId)
   }
-  return null
+  if (matches.length === 0) return null
+
+  if (expectedSkillId) {
+    for (const id of matches) {
+      if (id === expectedSkillId) return expectedSkillId
+      const partner = getSwapPartner(keybinds, id)
+      if (partner === expectedSkillId) return expectedSkillId
+    }
+  }
+
+  const skillId = matches[0]
+  const partner = getSwapPartner(keybinds, skillId)
+  if (!partner || !activeBySlot) return skillId
+
+  const slot = slotIdFor(skillId, partner)
+  return activeBySlot[slot] ?? skillId
 }

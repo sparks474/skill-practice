@@ -16,6 +16,7 @@ import type {
   MovementKeys,
   PracticeSummary,
   Rotation,
+  ScoreEvent,
 } from '../types'
 
 type Props = {
@@ -26,6 +27,20 @@ type Props = {
   config: EngineConfig
   onFinish: (summary: PracticeSummary) => void
   onAbort: () => void
+}
+
+/** 成功イベント列から置き換え枠の現在スキルを復元（二重更新・取りこぼし防止） */
+function swapActiveFromEvents(
+  events: ScoreEvent[],
+  keybinds: Keybinds,
+): Record<string, string> {
+  let active = createInitialSwapActive(keybinds)
+  for (const e of events) {
+    if (e.type === 'success') {
+      active = afterSuccessfulCast(active, e.skillId, keybinds)
+    }
+  }
+  return active
 }
 
 export function PracticeView({
@@ -65,31 +80,28 @@ export function PracticeView({
     })
   }, [hotbarLayout.slots, keybinds, swapActive])
 
+  function syncSwapFromSnapshot(snapshot: RuntimeSnapshot) {
+    const next = swapActiveFromEvents(snapshot.events, keybinds)
+    swapActiveRef.current = next
+    setSwapActive(next)
+  }
+
   function sync() {
     const rt = runtimeRef.current
     if (!rt) return
-    setSnap(rt.getSnapshot())
+    const snapshot = rt.getSnapshot()
+    syncSwapFromSnapshot(snapshot)
+    setSnap(snapshot)
   }
 
   function applyInput(skillId: string) {
     const rt = runtimeRef.current
     if (!rt || !running) return
-    const beforeEvents = rt.getSnapshot().events.length
     const elapsed = performance.now() - startWallRef.current
     rt.advanceTo(elapsed)
     rt.handleInput(skillId)
     const after = rt.getSnapshot()
-    const newEvents = after.events.slice(beforeEvents)
-    const success = newEvents.find(
-      (e) => e.type === 'success' && e.skillId === skillId,
-    )
-    if (success) {
-      setSwapActive((prev) => {
-        const next = afterSuccessfulCast(prev, skillId, keybinds)
-        swapActiveRef.current = next
-        return next
-      })
-    }
+    syncSwapFromSnapshot(after)
     setSnap(after)
   }
 
@@ -115,22 +127,9 @@ export function PracticeView({
       const rt = runtimeRef.current
       if (!rt) return
       const elapsed = performance.now() - startWallRef.current
-      const beforeEvents = rt.getSnapshot().events.length
       rt.advanceTo(elapsed)
       const s = rt.getSnapshot()
-      // キュー発火の成功でも置き換えを進める
-      const newEvents = s.events.slice(beforeEvents)
-      for (const e of newEvents) {
-        if (e.type === 'success') {
-          const next = afterSuccessfulCast(
-            swapActiveRef.current,
-            e.skillId,
-            keybinds,
-          )
-          swapActiveRef.current = next
-          setSwapActive(next)
-        }
-      }
+      syncSwapFromSnapshot(s)
       setSnap(s)
       if (s.finished) {
         setRunning(false)
@@ -141,6 +140,7 @@ export function PracticeView({
     }
     raf = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [running, keybinds])
 
   useEffect(() => {
@@ -154,7 +154,13 @@ export function PracticeView({
         e.preventDefault()
         return
       }
-      const skillId = skillIdForKey(keybinds, key, swapActiveRef.current)
+      const expected = runtimeRef.current?.expectedSkillId() ?? null
+      const skillId = skillIdForKey(
+        keybinds,
+        key,
+        swapActiveRef.current,
+        expected,
+      )
       if (!skillId) return
       e.preventDefault()
       applyInput(skillId)
