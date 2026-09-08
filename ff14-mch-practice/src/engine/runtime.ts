@@ -31,6 +31,7 @@ export type RuntimeSnapshot = {
   gauges: Gauges
   overheatStacks: number
   hasFullMetal: boolean
+  hasHyperchargeReady: boolean
   gcdReadyAt: number
   animLockUntil: number
   castUntil: number
@@ -47,6 +48,7 @@ type InternalState = {
   gauges: Gauges
   overheatStacks: number
   hasFullMetal: boolean
+  hasHyperchargeReady: boolean
   gcdReadyAt: number
   animLockUntil: number
   castUntil: number
@@ -92,6 +94,7 @@ export class PracticeRuntime {
       gauges: { ...this.rotation.initialGauges },
       overheatStacks: 0,
       hasFullMetal: false,
+      hasHyperchargeReady: false,
       gcdReadyAt: 0,
       animLockUntil: 0,
       castUntil: 0,
@@ -116,6 +119,7 @@ export class PracticeRuntime {
       gauges: { ...this.state.gauges },
       overheatStacks: this.state.overheatStacks,
       hasFullMetal: this.state.hasFullMetal,
+      hasHyperchargeReady: this.state.hasHyperchargeReady,
       gcdReadyAt: this.state.gcdReadyAt,
       animLockUntil: this.state.animLockUntil,
       castUntil: this.state.castUntil,
@@ -299,8 +303,19 @@ export class PracticeRuntime {
     this.state.lastFeedback = `その他失敗: ${reason}`
   }
 
+  private chargeKey(skill: Skill): string {
+    return skill.sharedRecastGroup ?? skill.id
+  }
+
+  private skillForChargeKey(key: string): Skill | undefined {
+    const direct = getSkill(key)
+    if (direct) return direct
+    return SKILLS.find((s) => s.sharedRecastGroup === key)
+  }
+
   private getChargeState(skill: Skill): ChargeState {
-    let cs = this.state.chargeMap.get(skill.id)
+    const key = this.chargeKey(skill)
+    let cs = this.state.chargeMap.get(key)
     if (!cs) {
       const max = skill.charges ?? 1
       cs = {
@@ -308,16 +323,16 @@ export class PracticeRuntime {
         nextChargeAt: null,
         readyAt: 0,
       }
-      this.state.chargeMap.set(skill.id, cs)
+      this.state.chargeMap.set(key, cs)
     }
     return cs
   }
 
   private refreshCharges(nowMs: number): void {
-    for (const skillId of this.state.chargeMap.keys()) {
-      const skill = getSkill(skillId)
+    for (const key of this.state.chargeMap.keys()) {
+      const skill = this.skillForChargeKey(key)
       if (!skill?.charges) continue
-      const cs = this.state.chargeMap.get(skillId)!
+      const cs = this.state.chargeMap.get(key)!
       const max = skill.charges
       while (
         cs.charges < max &&
@@ -387,7 +402,9 @@ export class PracticeRuntime {
     }
 
     const req = skill.gauge?.require
-    if (req?.heat != null && this.state.gauges.heat < req.heat) {
+    const freeHypercharge =
+      skill.id === 'hypercharge' && this.state.hasHyperchargeReady
+    if (!freeHypercharge && req?.heat != null && this.state.gauges.heat < req.heat) {
       return 'ヒート不足'
     }
     if (req?.battery != null && this.state.gauges.battery < req.battery) {
@@ -423,10 +440,17 @@ export class PracticeRuntime {
     }
 
     // ゲージ
-    const delta = skill.gauge?.delta
-    if (delta?.heat) {
-      this.state.gauges.heat = clampGauge(this.state.gauges.heat + delta.heat)
+    const freeHypercharge =
+      skill.id === 'hypercharge' && this.state.hasHyperchargeReady
+    if (freeHypercharge) {
+      this.state.hasHyperchargeReady = false
+    } else {
+      const delta = skill.gauge?.delta
+      if (delta?.heat) {
+        this.state.gauges.heat = clampGauge(this.state.gauges.heat + delta.heat)
+      }
     }
+    const delta = skill.gauge?.delta
     if (delta?.battery) {
       this.state.gauges.battery = clampGauge(
         this.state.gauges.battery + delta.battery,
@@ -447,6 +471,9 @@ export class PracticeRuntime {
     }
     if (skill.requiresFullMetal) {
       this.state.hasFullMetal = false
+    }
+    if (skill.grantsHyperchargeReady) {
+      this.state.hasHyperchargeReady = true
     }
 
     if (skill.reduceRecast) {

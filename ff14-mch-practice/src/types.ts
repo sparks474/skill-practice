@@ -23,6 +23,10 @@ export type Skill = {
   grantsOverheatStacks?: number
   requiresFullMetal?: boolean
   grantsFullMetal?: boolean
+  /** バレルヒーター等: ヒート消費なしでハイパーチャージ可能 */
+  grantsHyperchargeReady?: boolean
+  /** ドリル／バイオなどリキャスト共有グループ */
+  sharedRecastGroup?: string
   reduceRecast?: { skillIds: string[]; amountMs: number }
   /** UI グループ用の任意タグ */
   tags?: string[]

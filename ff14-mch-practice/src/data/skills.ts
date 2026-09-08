@@ -1,8 +1,9 @@
 import type { Skill } from '../types'
 
 /**
- * 機工士アクションマスタ（練習用近似値。パッチ追従は手動）
- * 数値はゲーム完全一致を保証しない。
+ * 機工士アクションマスタ
+ * 出典: https://jp.finalfantasyxiv.com/jobguide/machinist/ （Lv100 / Patch 7.x PvE）
+ * 威力・ペット挙動は練習ツール対象外。リキャスト・ゲージ・チャージを優先して合わせる。
  */
 export const SKILLS: Skill[] = [
   // —— コンボ ——
@@ -11,13 +12,13 @@ export const SKILLS: Skill[] = [
     nameJa: 'ヒートスプリットショット',
     category: 'skill',
     castMs: 0,
-    recastMs: 0,
+    recastMs: 0, // GCD 2.5s（回し設定）
     gauge: { delta: { heat: 5 } },
     tags: ['combo'],
   },
   {
     id: 'heated_slug_shot',
-    nameJa: 'ヒートスラグショット',
+    nameJa: 'ヒートスラッグショット',
     category: 'skill',
     castMs: 0,
     recastMs: 0,
@@ -39,14 +40,17 @@ export const SKILLS: Skill[] = [
     category: 'skill',
     castMs: 0,
     recastMs: 0,
+    gauge: { delta: { heat: 5 } },
     tags: ['combo'],
   },
   {
     id: 'slug_shot',
-    nameJa: 'スラグショット',
+    nameJa: 'スラッグショット',
     category: 'skill',
     castMs: 0,
     recastMs: 0,
+    // コンボ時のみヒート+5（練習では常時付与で近似）
+    gauge: { delta: { heat: 5 } },
     tags: ['combo'],
   },
   {
@@ -55,6 +59,7 @@ export const SKILLS: Skill[] = [
     category: 'skill',
     castMs: 0,
     recastMs: 0,
+    gauge: { delta: { heat: 5, battery: 10 } },
     tags: ['combo'],
   },
 
@@ -65,7 +70,9 @@ export const SKILLS: Skill[] = [
     category: 'skill',
     castMs: 0,
     recastMs: 20_000,
-    gauge: { delta: { battery: 20 } },
+    charges: 2,
+    sharedRecastGroup: 'drill_bio',
+    // 公式: バッテリー上昇なし（バイオとリキャ共有）
     tags: ['tool'],
   },
   {
@@ -91,7 +98,8 @@ export const SKILLS: Skill[] = [
     nameJa: 'エクスカベーター',
     category: 'skill',
     castMs: 0,
-    recastMs: 60_000,
+    // 公式: Instant / リキャスト 2.5秒（通常GCD）。固有長CDなし
+    recastMs: 0,
     gauge: { delta: { battery: 20 } },
     tags: ['tool'],
   },
@@ -101,6 +109,8 @@ export const SKILLS: Skill[] = [
     category: 'skill',
     castMs: 0,
     recastMs: 20_000,
+    charges: 2,
+    sharedRecastGroup: 'drill_bio',
     tags: ['aoe', 'tool'],
   },
   {
@@ -114,7 +124,7 @@ export const SKILLS: Skill[] = [
   },
   {
     id: 'auto_crossbow',
-    nameJa: 'オートクロスボウ',
+    nameJa: 'オートボウガン',
     category: 'skill',
     castMs: 0,
     recastMs: 0,
@@ -147,7 +157,7 @@ export const SKILLS: Skill[] = [
     fixedGcdMs: 1500,
     requiresOverheat: true,
     reduceRecast: {
-      skillIds: ['double_check', 'checkmate'],
+      skillIds: ['gauss_round', 'ricochet', 'double_check', 'checkmate'],
       amountMs: 15_000,
     },
     tags: ['overheat'],
@@ -157,7 +167,7 @@ export const SKILLS: Skill[] = [
     nameJa: 'フルメタルバースト',
     category: 'skill',
     castMs: 0,
-    recastMs: 0,
+    recastMs: 0, // 公式リキャスト 2.5秒 = 通常GCD
     requiresFullMetal: true,
     tags: ['burst'],
   },
@@ -178,6 +188,7 @@ export const SKILLS: Skill[] = [
     category: 'ability',
     castMs: 0,
     recastMs: 10_000,
+    // 通常はヒート50消費。バレルの「ハイパーチャージ実行可」時は無消費（エンジン側）
     gauge: { require: { heat: 50 }, delta: { heat: -50 } },
     grantsOverheatStacks: 5,
     tags: ['gauge'],
@@ -189,6 +200,7 @@ export const SKILLS: Skill[] = [
     castMs: 0,
     recastMs: 120_000,
     grantsFullMetal: true,
+    grantsHyperchargeReady: true,
     tags: ['burst'],
   },
   {
@@ -223,16 +235,18 @@ export const SKILLS: Skill[] = [
     category: 'ability',
     castMs: 0,
     recastMs: 6_000,
+    sharedRecastGroup: 'queen',
     gauge: { require: { battery: 50 } },
     consumeAllBattery: true,
     tags: ['pet'],
   },
   {
     id: 'queen_overdrive',
-    nameJa: 'クイーン・オーバードライブ',
+    nameJa: 'オーバードライブ・クイーン',
     category: 'ability',
     castMs: 0,
     recastMs: 15_000,
+    sharedRecastGroup: 'queen',
     tags: ['pet'],
   },
   {
@@ -241,8 +255,18 @@ export const SKILLS: Skill[] = [
     category: 'ability',
     castMs: 0,
     recastMs: 6_000,
+    sharedRecastGroup: 'rook',
     gauge: { require: { battery: 50 } },
     consumeAllBattery: true,
+    tags: ['pet'],
+  },
+  {
+    id: 'rook_overdrive',
+    nameJa: 'オーバードライブ・ルーク',
+    category: 'ability',
+    castMs: 0,
+    recastMs: 15_000,
+    sharedRecastGroup: 'rook',
     tags: ['pet'],
   },
   {
@@ -281,11 +305,19 @@ export const SKILLS: Skill[] = [
   },
   {
     id: 'dismantle',
-    nameJa: 'ディスマントル',
+    nameJa: 'ウェポンブレイク',
     category: 'ability',
     castMs: 0,
     recastMs: 120_000,
     tags: ['mit'],
+  },
+  {
+    id: 'flamethrower',
+    nameJa: 'フレイムスロアー',
+    category: 'ability',
+    castMs: 0,
+    recastMs: 60_000,
+    tags: ['aoe'],
   },
 ]
 
@@ -295,4 +327,9 @@ export const SKILL_BY_ID: Record<string, Skill> = Object.fromEntries(
 
 export function getSkill(id: string): Skill | undefined {
   return SKILL_BY_ID[id]
+}
+
+/** 同一リキャストグループに属するスキル ID 一覧 */
+export function skillsInRecastGroup(group: string): Skill[] {
+  return SKILLS.filter((s) => s.sharedRecastGroup === group)
 }
