@@ -14,7 +14,8 @@
     "test:mash": "tsx scripts/test-mash-lock.mts",
     "test:free": "tsx scripts/test-free-practice.mts",
     "test:brd": "tsx scripts/test-brd-skills.mts",
-    "test:dnc": "tsx scripts/test-dnc-skills.mts"
+    "test:dnc": "tsx scripts/test-dnc-skills.mts",
+    "test:step": "tsx scripts/test-step-insert.mts"
   },
   "dependencies": {
     "react": "^19.2.8",
