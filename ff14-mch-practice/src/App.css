@@ -412,6 +412,20 @@ select {
   color: #b8a67a;
 }
 
+.hotbar-btn.on-cd {
+  opacity: 0.72;
+}
+
+.hotbar-cd {
+  font-size: 0.8rem;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.hotbar-btn.on-cd .hotbar-cd {
+  color: #d0a070;
+}
+
 .hotbar-name {
   font-size: 0.92rem;
 }
