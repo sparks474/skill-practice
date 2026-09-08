@@ -55,6 +55,38 @@ export type Skill = {
   /** BRD: 光神のアンコール実行可が必要 */
   requiresRadiantEncore?: boolean
   grantsRadiantEncore?: boolean
+  /** DNC: 対称投擲（またはフラリッシュ版） */
+  requiresSilkenSymmetry?: boolean
+  grantsSilkenSymmetry?: boolean
+  /** DNC: 非対称投擲（またはフラリッシュ版） */
+  requiresSilkenFlow?: boolean
+  grantsSilkenFlow?: boolean
+  /** DNC: 扇の舞い【急】実行可 */
+  requiresFanDance3?: boolean
+  grantsFanDance3?: boolean
+  /** DNC: 扇の舞い【終】実行可 */
+  requiresFanDance4?: boolean
+  grantsFanDance4?: boolean
+  /** DNC: ラストダンス実行可 */
+  requiresLastDance?: boolean
+  grantsLastDance?: boolean
+  /** DNC: フィニシングムーブ実行可 */
+  requiresFinishingMove?: boolean
+  grantsFinishingMove?: boolean
+  /** DNC: 流星の舞い実行可 */
+  requiresStarfall?: boolean
+  grantsStarfall?: boolean
+  /** DNC: ティラナ実行可 */
+  requiresTillana?: boolean
+  grantsTillana?: boolean
+  /** DNC: 暁の舞い実行可 */
+  requiresDanceOfTheDawn?: boolean
+  grantsDanceOfTheDawn?: boolean
+  /** DNC: ダンスモード中が必要（ステップ／フィニッシュ） */
+  requiresDanceMode?: boolean
+  grantsDanceMode?: boolean
+  /** ダンスモードを終了（フィニッシュ時） */
+  endsDanceMode?: boolean
   /** ドリル／バイオなどリキャスト共有グループ */
   sharedRecastGroup?: string
   reduceRecast?: { skillIds: string[]; amountMs: number }

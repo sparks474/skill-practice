@@ -5,6 +5,10 @@ export const DEFAULT_SWAP_PAIRS: readonly [string, string][] = [
   ['chain_saw', 'excavator'],
   ['barrel_stabilizer', 'full_metal_burst'],
   ['apex_arrow', 'blast_arrow'],
+  ['saber_dance', 'dance_of_the_dawn'],
+  ['standard_step', 'finishing_move'],
+  ['technical_step', 'tillana'],
+  ['improvisation', 'improvisation_finish'],
 ]
 
 export function slotIdFor(a: string, b: string): string {

@@ -13,7 +13,8 @@
     "test:score": "tsx scripts/test-score-summary.mts",
     "test:mash": "tsx scripts/test-mash-lock.mts",
     "test:free": "tsx scripts/test-free-practice.mts",
-    "test:brd": "tsx scripts/test-brd-skills.mts"
+    "test:brd": "tsx scripts/test-brd-skills.mts",
+    "test:dnc": "tsx scripts/test-dnc-skills.mts"
   },
   "dependencies": {
     "react": "^19.2.8",

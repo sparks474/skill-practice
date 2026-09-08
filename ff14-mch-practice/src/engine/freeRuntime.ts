@@ -42,6 +42,16 @@ type InternalState = {
   hasBlastArrow: boolean
   hasResonanceArrow: boolean
   hasRadiantEncore: boolean
+  hasSilkenSymmetry: boolean
+  hasSilkenFlow: boolean
+  hasFanDance3: boolean
+  hasFanDance4: boolean
+  hasLastDance: boolean
+  hasFinishingMove: boolean
+  hasStarfall: boolean
+  hasTillana: boolean
+  hasDanceOfTheDawn: boolean
+  hasDanceMode: boolean
   gcdReadyAt: number
   animLockUntil: number
   castUntil: number
@@ -94,6 +104,16 @@ export class FreePracticeRuntime {
       hasBlastArrow: false,
       hasResonanceArrow: false,
       hasRadiantEncore: false,
+      hasSilkenSymmetry: false,
+      hasSilkenFlow: false,
+      hasFanDance3: false,
+      hasFanDance4: false,
+      hasLastDance: false,
+      hasFinishingMove: false,
+      hasStarfall: false,
+      hasTillana: false,
+      hasDanceOfTheDawn: false,
+      hasDanceMode: false,
       gcdReadyAt: 0,
       animLockUntil: 0,
       castUntil: 0,
@@ -161,6 +181,16 @@ export class FreePracticeRuntime {
       hasBlastArrow: this.state.hasBlastArrow,
       hasResonanceArrow: this.state.hasResonanceArrow,
       hasRadiantEncore: this.state.hasRadiantEncore,
+      hasSilkenSymmetry: this.state.hasSilkenSymmetry,
+      hasSilkenFlow: this.state.hasSilkenFlow,
+      hasFanDance3: this.state.hasFanDance3,
+      hasFanDance4: this.state.hasFanDance4,
+      hasLastDance: this.state.hasLastDance,
+      hasFinishingMove: this.state.hasFinishingMove,
+      hasStarfall: this.state.hasStarfall,
+      hasTillana: this.state.hasTillana,
+      hasDanceOfTheDawn: this.state.hasDanceOfTheDawn,
+      hasDanceMode: this.state.hasDanceMode,
       gcdReadyAt: this.state.gcdReadyAt,
       animLockUntil: this.state.animLockUntil,
       castUntil: this.state.castUntil,
@@ -418,7 +448,7 @@ export class FreePracticeRuntime {
     }
 
     if (skill.requiresOverheat && this.state.overheatStacks <= 0) {
-      return 'オーバーヒートが必要'
+      return this.rotation.jobId === 'DNC' ? '幻扇が必要' : 'オーバーヒートが必要'
     }
     if (skill.requiresFullMetal && !this.state.hasFullMetal) {
       return 'フルメタル準備が必要'
@@ -435,6 +465,36 @@ export class FreePracticeRuntime {
     if (skill.requiresRadiantEncore && !this.state.hasRadiantEncore) {
       return '光神のアンコール実行可が必要'
     }
+    if (skill.requiresSilkenSymmetry && !this.state.hasSilkenSymmetry) {
+      return '対称投擲が必要'
+    }
+    if (skill.requiresSilkenFlow && !this.state.hasSilkenFlow) {
+      return '非対称投擲が必要'
+    }
+    if (skill.requiresFanDance3 && !this.state.hasFanDance3) {
+      return '扇の舞い【急】実行可が必要'
+    }
+    if (skill.requiresFanDance4 && !this.state.hasFanDance4) {
+      return '扇の舞い【終】実行可が必要'
+    }
+    if (skill.requiresLastDance && !this.state.hasLastDance) {
+      return 'ラストダンス実行可が必要'
+    }
+    if (skill.requiresFinishingMove && !this.state.hasFinishingMove) {
+      return 'フィニシングムーブ実行可が必要'
+    }
+    if (skill.requiresStarfall && !this.state.hasStarfall) {
+      return '流星の舞い実行可が必要'
+    }
+    if (skill.requiresTillana && !this.state.hasTillana) {
+      return 'ティラナ実行可が必要'
+    }
+    if (skill.requiresDanceOfTheDawn && !this.state.hasDanceOfTheDawn) {
+      return '暁の舞い実行可が必要'
+    }
+    if (skill.requiresDanceMode && !this.state.hasDanceMode) {
+      return 'ダンスモードが必要'
+    }
 
     const req = skill.gauge?.require
     const freeHypercharge =
@@ -443,7 +503,9 @@ export class FreePracticeRuntime {
       return 'ヒート不足'
     }
     if (req?.battery != null && this.state.gauges.battery < req.battery) {
-      return this.rotation.jobId === 'BRD' ? 'ソウルボイス不足' : 'バッテリー不足'
+      if (this.rotation.jobId === 'BRD') return 'ソウルボイス不足'
+      if (this.rotation.jobId === 'DNC') return 'エスプリ不足'
+      return 'バッテリー不足'
     }
 
     return null
@@ -502,6 +564,9 @@ export class FreePracticeRuntime {
 
     if (skill.grantsOverheatStacks) {
       this.state.overheatStacks += skill.grantsOverheatStacks
+      if (this.rotation.jobId === 'DNC') {
+        this.state.overheatStacks = Math.min(4, this.state.overheatStacks)
+      }
     }
     if (skill.requiresOverheat) {
       this.state.overheatStacks = Math.max(0, this.state.overheatStacks - 1)
@@ -543,6 +608,27 @@ export class FreePracticeRuntime {
     if (skill.requiresRadiantEncore) {
       this.state.hasRadiantEncore = false
     }
+
+    if (skill.grantsSilkenSymmetry) this.state.hasSilkenSymmetry = true
+    if (skill.requiresSilkenSymmetry) this.state.hasSilkenSymmetry = false
+    if (skill.grantsSilkenFlow) this.state.hasSilkenFlow = true
+    if (skill.requiresSilkenFlow) this.state.hasSilkenFlow = false
+    if (skill.grantsFanDance3) this.state.hasFanDance3 = true
+    if (skill.requiresFanDance3) this.state.hasFanDance3 = false
+    if (skill.grantsFanDance4) this.state.hasFanDance4 = true
+    if (skill.requiresFanDance4) this.state.hasFanDance4 = false
+    if (skill.grantsLastDance) this.state.hasLastDance = true
+    if (skill.requiresLastDance) this.state.hasLastDance = false
+    if (skill.grantsFinishingMove) this.state.hasFinishingMove = true
+    if (skill.requiresFinishingMove) this.state.hasFinishingMove = false
+    if (skill.grantsStarfall) this.state.hasStarfall = true
+    if (skill.requiresStarfall) this.state.hasStarfall = false
+    if (skill.grantsTillana) this.state.hasTillana = true
+    if (skill.requiresTillana) this.state.hasTillana = false
+    if (skill.grantsDanceOfTheDawn) this.state.hasDanceOfTheDawn = true
+    if (skill.requiresDanceOfTheDawn) this.state.hasDanceOfTheDawn = false
+    if (skill.grantsDanceMode) this.state.hasDanceMode = true
+    if (skill.endsDanceMode) this.state.hasDanceMode = false
 
     if (skill.reduceRecast) {
       for (const id of skill.reduceRecast.skillIds) {

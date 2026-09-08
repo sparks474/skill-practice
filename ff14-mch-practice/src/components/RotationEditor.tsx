@@ -196,6 +196,26 @@ export function RotationEditor({ rotation, keybinds, onSave, onCancel }: Props) 
             />
           </label>
         ) : null}
+        {draft.jobId === 'DNC' ? (
+          <label>
+            初期エスプリ
+            <input
+              type="number"
+              min={0}
+              max={100}
+              value={draft.initialGauges.battery}
+              onChange={(e) =>
+                setDraft({
+                  ...draft,
+                  initialGauges: {
+                    ...draft.initialGauges,
+                    battery: Number(e.target.value) || 0,
+                  },
+                })
+              }
+            />
+          </label>
+        ) : null}
         <label className="full">
           メモ
           <input

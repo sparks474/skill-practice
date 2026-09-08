@@ -347,6 +347,32 @@ export function PracticeView({
             </div>
           </>
         ) : null}
+        {rotation.jobId === 'DNC' ? (
+          <>
+            <div className="gauge">
+              <div className="gauge-label">
+                <span>エスプリ</span>
+                <span>{snap.gauges.battery}</span>
+              </div>
+              <div className="gauge-track">
+                <div
+                  className="gauge-fill battery"
+                  style={{ width: `${snap.gauges.battery}%` }}
+                />
+              </div>
+            </div>
+            <div className="status-pills">
+              <span>幻扇×{snap.overheatStacks}</span>
+              <span>{snap.hasDanceMode ? 'ダンス中' : '通常'}</span>
+              <span>{snap.hasSilkenSymmetry ? '対称' : '対称なし'}</span>
+              <span>{snap.hasSilkenFlow ? '非対称' : '非対称なし'}</span>
+              <span>{snap.hasLastDance ? 'LD可' : 'LDなし'}</span>
+              <span>{snap.hasTillana ? 'ティラナ可' : 'ティラナなし'}</span>
+              <span>{snap.hasStarfall ? '流星可' : '流星なし'}</span>
+              <span>{snap.hasDanceOfTheDawn ? '暁可' : '暁なし'}</span>
+            </div>
+          </>
+        ) : null}
       </section>
 
       <section className="timers" aria-label="タイマー">

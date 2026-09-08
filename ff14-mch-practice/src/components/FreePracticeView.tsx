@@ -308,6 +308,11 @@ export function FreePracticeView({
                   {' '}
                   · SV溢れ {view.batteryOverflow}
                 </>
+              ) : jobId === 'DNC' ? (
+                <>
+                  {' '}
+                  · エスプリ溢れ {view.batteryOverflow}
+                </>
               ) : (
                 <>
                   {' '}
@@ -397,6 +402,34 @@ export function FreePracticeView({
                     {view.hasRadiantEncore
                       ? 'アンコール実行可'
                       : 'アンコールなし'}
+                  </span>
+                </div>
+              </>
+            ) : null}
+            {jobId === 'DNC' ? (
+              <>
+                <div className="gauge">
+                  <div className="gauge-label">
+                    <span>エスプリ</span>
+                    <span>{view.gauges.battery}</span>
+                  </div>
+                  <div className="gauge-track">
+                    <div
+                      className="gauge-fill battery"
+                      style={{ width: `${view.gauges.battery}%` }}
+                    />
+                  </div>
+                </div>
+                <div className="status-pills">
+                  <span>幻扇×{view.overheatStacks}</span>
+                  <span>{view.hasDanceMode ? 'ダンス中' : '通常'}</span>
+                  <span>{view.hasSilkenSymmetry ? '対称' : '対称なし'}</span>
+                  <span>{view.hasSilkenFlow ? '非対称' : '非対称なし'}</span>
+                  <span>{view.hasLastDance ? 'LD可' : 'LDなし'}</span>
+                  <span>{view.hasTillana ? 'ティラナ可' : 'ティラナなし'}</span>
+                  <span>{view.hasStarfall ? '流星可' : '流星なし'}</span>
+                  <span>
+                    {view.hasDanceOfTheDawn ? '暁可' : '暁なし'}
                   </span>
                 </div>
               </>

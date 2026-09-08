@@ -44,12 +44,34 @@ const BRD_PRESET: Keybinds = {
   potion: { key: 'z' },
 }
 
+/** 踊り子向けの初期キー配置 */
+const DNC_PRESET: Keybinds = {
+  cascade: { key: '1' },
+  fountain: { key: '2' },
+  reverse_cascade: { key: '3' },
+  fountainfall: { key: '4' },
+  saber_dance: { key: '5' },
+  last_dance: { key: '6' },
+  starfall_dance: { key: '7' },
+  standard_step: { key: 'q' },
+  technical_step: { key: 'e' },
+  flourish: { key: 'r' },
+  devilment: { key: 't' },
+  fan_dance: { key: 'f' },
+  fan_dance_iii: { key: 'g' },
+  fan_dance_iv: { key: 'b' },
+  shield_samba: { key: 'c' },
+  curing_waltz: { key: 'v' },
+  potion: { key: 'z' },
+}
+
 const PRESETS: Partial<Record<JobId, Keybinds>> = {
   MCH: MCH_PRESET,
   BRD: BRD_PRESET,
+  DNC: DNC_PRESET,
 }
 
-const SWAP_JOBS: JobId[] = ['MCH', 'BRD']
+const SWAP_JOBS: JobId[] = ['MCH', 'BRD', 'DNC']
 
 export function createDefaultKeybinds(jobId: JobId = 'MCH'): Keybinds {
   const skills = getSkillsForJob(jobId)

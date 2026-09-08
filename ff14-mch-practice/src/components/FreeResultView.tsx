@@ -14,6 +14,18 @@ function formatMs(ms: number): string {
   return `${(ms / 1000).toFixed(2)}s`
 }
 
+function batteryLabelFor(jobId: JobId): string {
+  if (jobId === 'BRD') return 'ソウルボイス溢れ'
+  if (jobId === 'DNC') return 'エスプリ溢れ'
+  return 'バッテリー溢れ'
+}
+
+function batteryNameFor(jobId: JobId): string {
+  if (jobId === 'BRD') return 'ソウルボイス'
+  if (jobId === 'DNC') return 'エスプリ'
+  return 'バッテリー'
+}
+
 export function FreeResultView({
   summary,
   jobId,
@@ -21,8 +33,9 @@ export function FreeResultView({
   onRetry,
   onHome,
 }: Props) {
-  const heatLabel = jobId === 'BRD' ? '未使用ゲージ溢れ' : 'ヒート溢れ'
-  const batteryLabel = jobId === 'BRD' ? 'ソウルボイス溢れ' : 'バッテリー溢れ'
+  const showHeat = jobId === 'MCH' || summary.heatOverflow > 0
+  const heatLabel = jobId === 'MCH' ? 'ヒート溢れ' : '未使用ゲージ溢れ'
+  const batteryLabel = batteryLabelFor(jobId)
 
   return (
     <div className="page">
@@ -54,7 +67,7 @@ export function FreeResultView({
             空き時間（無駄）
             <strong>{formatMs(summary.idleWasteMs)}</strong>
           </li>
-          {jobId !== 'BRD' || summary.heatOverflow > 0 ? (
+          {showHeat ? (
             <li>
               {heatLabel}
               <strong>{summary.heatOverflow}</strong>
@@ -74,8 +87,8 @@ export function FreeResultView({
         <p className="muted result-hint">
           空き時間は、GCD・硬直・詠唱が空いているのに Weaponskill
           を押さなかった合計です（発動遊び以内は除く）。ゲージ溢れは、すでに
-          100 のゲージへさらに加算したときです
-          {jobId === 'BRD' ? '（詩人はソウルボイス）' : ''}。
+          100 のゲージへさらに加算したときです（
+          {batteryNameFor(jobId)}）。
         </p>
       </section>
 
@@ -100,12 +113,10 @@ export function FreeResultView({
             if (e.type === 'gauge_overflow') {
               const g =
                 e.gauge === 'heat'
-                  ? jobId === 'BRD'
-                    ? '未使用'
-                    : 'ヒート'
-                  : jobId === 'BRD'
-                    ? 'ソウルボイス'
-                    : 'バッテリー'
+                  ? jobId === 'MCH'
+                    ? 'ヒート'
+                    : '未使用'
+                  : batteryNameFor(jobId)
               return (
                 <li key={i} className="waste">
                   {t} ゲージ溢れ（{g}）: {name}
