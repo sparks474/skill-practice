@@ -55,6 +55,7 @@ function App() {
     return (
       <RotationEditor
         rotation={rot}
+        keybinds={keybinds}
         onCancel={goHome}
         onSave={(updated) => {
           persistRotations(
