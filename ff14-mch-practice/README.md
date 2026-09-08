@@ -15,7 +15,21 @@
 - 回しの編集・追加（`localStorage`）
 - キー設定・エンジン定数の変更
 
-## 起動
+## 遊ぶ（GitHub Pages）
+
+公開後の URL（想定）:
+
+**https://sparks474.github.io/skill-practice/**
+
+初回のみリポジトリ設定が必要です。
+
+1. GitHub → **Settings** → **Pages**
+2. **Source** を **GitHub Actions** にする
+3. `main` へマージ（または Actions で `Deploy GitHub Pages` を手動実行）
+
+ブラウザだけで遊べます（インストール不要・オフライン保存は端末の localStorage）。
+
+## 起動（ローカル）
 
 ```bash
 cd ff14-mch-practice
