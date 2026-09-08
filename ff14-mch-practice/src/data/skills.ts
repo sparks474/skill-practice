@@ -1,4 +1,5 @@
-import type { Skill } from '../types'
+import { DEFAULT_JOB_ID } from './jobs'
+import type { JobId, Skill } from '../types'
 
 /**
  * 機工士アクションマスタ
@@ -330,11 +331,18 @@ export const SKILLS: Skill[] = [
 ]
 
 export const SKILL_BY_ID: Record<string, Skill> = Object.fromEntries(
-  SKILLS.map((s) => [s.id, s]),
+  SKILLS.map((s) => [s.id, { ...s, jobId: s.jobId ?? 'MCH' }]),
 )
 
 export function getSkill(id: string): Skill | undefined {
   return SKILL_BY_ID[id]
+}
+
+/** ジョブのスキル一覧（データ未登録ジョブは空） */
+export function getSkillsForJob(jobId: JobId): Skill[] {
+  return SKILLS.filter((s) => (s.jobId ?? DEFAULT_JOB_ID) === jobId).map(
+    (s) => SKILL_BY_ID[s.id] ?? s,
+  )
 }
 
 /** 同一リキャストグループに属するスキル ID 一覧 */

@@ -1,5 +1,5 @@
 import { DEFAULT_SWAP_PAIRS, getSwapPartner } from './skillSlots'
-import type { HotbarLayout, Keybinds } from '../types'
+import type { HotbarLayout, JobId, Keybinds } from '../types'
 
 export const HOTBAR_COLS = 12
 export const HOTBAR_ROWS_DEFAULT = 2
@@ -23,14 +23,19 @@ export const DEFAULT_HOTBAR_SKILL_IDS = [
   'heated_clean_shot',
 ] as const
 
-export function createDefaultHotbarLayout(): HotbarLayout {
+const DEFAULT_HOTBAR_BY_JOB: Partial<Record<JobId, readonly string[]>> = {
+  MCH: DEFAULT_HOTBAR_SKILL_IDS,
+}
+
+export function createDefaultHotbarLayout(jobId: JobId = 'MCH'): HotbarLayout {
   const cols = HOTBAR_COLS
   const rows = HOTBAR_ROWS_DEFAULT
   const slots: (string | null)[] = Array.from(
     { length: cols * rows },
     () => null,
   )
-  DEFAULT_HOTBAR_SKILL_IDS.forEach((id, i) => {
+  const ids = DEFAULT_HOTBAR_BY_JOB[jobId] ?? []
+  ids.forEach((id, i) => {
     if (i < slots.length) slots[i] = id
   })
   return { cols, rows, slots }

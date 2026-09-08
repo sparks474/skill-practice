@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { HotbarLayoutEditor } from './HotbarLayoutEditor'
 import { normalizeHotbarLayout } from '../data/hotbarLayout'
-import { SKILLS } from '../data/skills'
+import { JOBS, jobNameJa } from '../data/jobs'
+import { getSkillsForJob } from '../data/skills'
 import {
   assignKey,
   effectiveKey,
@@ -9,38 +10,17 @@ import {
   setSwapPartner,
 } from '../data/skillSlots'
 import { formatKeyLabel } from '../input/keys'
-import type {
-  EngineConfig,
-  HotbarLayout,
-  Keybinds,
-  MovementDirection,
-  MovementKeys,
-} from '../types'
+import type { HotbarLayout, JobId, Keybinds, MovementKeys } from '../types'
 
 type Props = {
+  jobId: JobId
   keybinds: Keybinds
-  config: EngineConfig
   movementKeys: MovementKeys
   hotbarLayout: HotbarLayout
-  onSave: (
-    keybinds: Keybinds,
-    config: EngineConfig,
-    movementKeys: MovementKeys,
-    hotbarLayout: HotbarLayout,
-  ) => void
+  onJobChange: (jobId: JobId) => void
+  onSave: (keybinds: Keybinds, hotbarLayout: HotbarLayout) => void
   onCancel: () => void
 }
-
-type ListenTarget =
-  | { kind: 'skill'; skillId: string }
-  | { kind: 'move'; dir: MovementDirection }
-
-const MOVE_ROWS: { dir: MovementDirection; label: string }[] = [
-  { dir: 'up', label: '上' },
-  { dir: 'down', label: '下' },
-  { dir: 'left', label: '左' },
-  { dir: 'right', label: '右' },
-]
 
 function clearKeyFromSkills(keybinds: Keybinds, key: string): Keybinds {
   const next: Keybinds = { ...keybinds }
@@ -53,41 +33,33 @@ function clearKeyFromSkills(keybinds: Keybinds, key: string): Keybinds {
   return next
 }
 
-function clearKeyFromMovement(
-  movement: MovementKeys,
-  key: string,
-  except?: MovementDirection,
-): MovementKeys {
-  const next = { ...movement }
-  const normalized = key.toLowerCase()
-  for (const dir of ['up', 'down', 'left', 'right'] as MovementDirection[]) {
-    if (dir === except) continue
-    if (next[dir]?.toLowerCase() === normalized) {
-      next[dir] = undefined
-    }
-  }
-  return next
+function isMovementKey(movement: MovementKeys, key: string): boolean {
+  const n = key.toLowerCase()
+  return (
+    movement.up?.toLowerCase() === n ||
+    movement.down?.toLowerCase() === n ||
+    movement.left?.toLowerCase() === n ||
+    movement.right?.toLowerCase() === n
+  )
 }
 
 export function KeybindSettings({
+  jobId,
   keybinds,
-  config,
   movementKeys,
   hotbarLayout,
+  onJobChange,
   onSave,
   onCancel,
 }: Props) {
+  const skills = useMemo(() => getSkillsForJob(jobId), [jobId])
   const [draftBinds, setDraftBinds] = useState<Keybinds>(() =>
     structuredClone(keybinds),
   )
-  const [draftConfig, setDraftConfig] = useState<EngineConfig>({ ...config })
-  const [draftMove, setDraftMove] = useState<MovementKeys>(() => ({
-    ...movementKeys,
-  }))
   const [draftHotbar, setDraftHotbar] = useState<HotbarLayout>(() =>
     normalizeHotbarLayout(hotbarLayout, keybinds),
   )
-  const [listening, setListening] = useState<ListenTarget | null>(null)
+  const [listening, setListening] = useState<string | null>(null)
 
   useEffect(() => {
     if (!listening) return
@@ -103,25 +75,22 @@ export function KeybindSettings({
         setListening(null)
         return
       }
-
-      if (listening.kind === 'skill') {
-        setDraftMove((prev) => clearKeyFromMovement(prev, key))
-        setDraftBinds((prev) => assignKey(prev, listening.skillId, key))
-      } else {
-        setDraftBinds((prev) => clearKeyFromSkills(prev, key))
-        setDraftMove((prev) => ({
-          ...clearKeyFromMovement(prev, key, listening.dir),
-          [listening.dir]: key,
-        }))
+      if (isMovementKey(movementKeys, key)) {
+        // 移動キーとは衝突させない
+        setListening(null)
+        return
       }
+      setDraftBinds((prev) =>
+        assignKey(clearKeyFromSkills(prev, key), listening, key),
+      )
       setListening(null)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [listening])
+  }, [listening, movementKeys])
 
   const rows = useMemo(() => {
-    const list = [...SKILLS]
+    const list = [...skills]
     list.sort((a, b) => {
       const au = draftBinds[a.id]?.unused ? 1 : 0
       const bu = draftBinds[b.id]?.unused ? 1 : 0
@@ -129,108 +98,61 @@ export function KeybindSettings({
       return 0
     })
     return list
-  }, [draftBinds])
+  }, [draftBinds, skills])
 
   return (
     <div className="page">
       <header className="page-header">
         <div>
-          <p className="brand">MCH Practice</p>
-          <h1>キー設定</h1>
-          <p className="lead">キー割り当て・移動・置き換え・不要スキル</p>
+          <p className="brand">Skill Practice</p>
+          <h1>キーバインド</h1>
+          <p className="lead">ホットバー配置・キー割り当て（ジョブ別）</p>
         </div>
         <div className="header-actions">
+          <label className="job-select">
+            ジョブ
+            <select
+              value={jobId}
+              onChange={(e) => onJobChange(e.target.value as JobId)}
+            >
+              {JOBS.map((j) => (
+                <option key={j.id} value={j.id}>
+                  {j.nameJa}
+                </option>
+              ))}
+            </select>
+          </label>
           <button type="button" className="btn ghost" onClick={onCancel}>
             戻る
           </button>
           <button
             type="button"
             className="btn primary"
-            onClick={() => onSave(draftBinds, draftConfig, draftMove, draftHotbar)}
+            onClick={() => onSave(draftBinds, draftHotbar)}
           >
             保存
           </button>
         </div>
       </header>
 
-      <section className="editor-meta">
-        <label>
-          アニメロック (ms)
-          <input
-            type="number"
-            value={draftConfig.defaultAnimationLockMs}
-            onChange={(e) =>
-              setDraftConfig({
-                ...draftConfig,
-                defaultAnimationLockMs: Number(e.target.value) || 0,
-              })
-            }
-          />
-        </label>
-        <label>
-          先行入力窓 (ms)
-          <input
-            type="number"
-            value={draftConfig.queueWindowMs}
-            onChange={(e) =>
-              setDraftConfig({
-                ...draftConfig,
-                queueWindowMs: Number(e.target.value) || 0,
-              })
-            }
-          />
-        </label>
-      </section>
-
-      <section>
-        <h2>移動キー</h2>
+      {skills.length === 0 ? (
         <p className="muted">
-          練習中に押してもスキル入力にはならず、ミスにもなりません（初期は WASD）。
+          {jobNameJa(jobId)}
+          のスキルデータはまだありません。機工士以外は今後追加予定です。
         </p>
-        <ul className="keybind-list">
-          {MOVE_ROWS.map(({ dir, label }) => {
-            const listeningHere =
-              listening?.kind === 'move' && listening.dir === dir
-            return (
-              <li key={dir} className="keybind-row">
-                <span className="keybind-name">移動・{label}</span>
-                <span className="muted">移動</span>
-                <span className="key-badge">
-                  {formatKeyLabel(draftMove[dir])}
-                </span>
-                <button
-                  type="button"
-                  className="btn ghost"
-                  onClick={() => setListening({ kind: 'move', dir })}
-                >
-                  {listeningHere ? '入力待ち…' : '変更'}
-                </button>
-                <button
-                  type="button"
-                  className="btn ghost"
-                  onClick={() =>
-                    setDraftMove((prev) => ({ ...prev, [dir]: undefined }))
-                  }
-                >
-                  クリア
-                </button>
-              </li>
-            )
-          })}
-        </ul>
-      </section>
+      ) : null}
 
       <HotbarLayoutEditor
         layout={draftHotbar}
         keybinds={draftBinds}
+        skills={skills}
         onChange={setDraftHotbar}
       />
 
       <section>
         <h2>キー割り当て</h2>
         <p className="muted">
-          「変更」でキー割り当て。置き換えを設定すると同じキー枠でトグルします（例:
-          回転のこぎり ↔ エクスカベーター）。不要にチェックするとグレーアウトして末尾へ移動し、練習ホットバーから外れます。
+          「変更」でキー割り当て。置き換えを設定すると同じキー枠でトグルします。不要にチェックするとグレーアウトして末尾へ移動し、練習ホットバーから外れます。
         </p>
         <ul className="keybind-list">
           {rows.map((skill) => {
@@ -238,8 +160,7 @@ export function KeybindSettings({
             const unused = Boolean(bind.unused)
             const partnerId = getSwapPartner(draftBinds, skill.id)
             const keyLabel = formatKeyLabel(effectiveKey(draftBinds, skill.id))
-            const listeningHere =
-              listening?.kind === 'skill' && listening.skillId === skill.id
+            const listeningHere = listening === skill.id
             return (
               <li
                 key={skill.id}
@@ -254,9 +175,7 @@ export function KeybindSettings({
                   type="button"
                   className="btn ghost"
                   disabled={unused}
-                  onClick={() =>
-                    setListening({ kind: 'skill', skillId: skill.id })
-                  }
+                  onClick={() => setListening(skill.id)}
                 >
                   {listeningHere ? '入力待ち…' : '変更'}
                 </button>
@@ -265,7 +184,9 @@ export function KeybindSettings({
                   className="btn ghost"
                   disabled={unused}
                   onClick={() =>
-                    setDraftBinds((prev) => assignKey(prev, skill.id, undefined))
+                    setDraftBinds((prev) =>
+                      assignKey(prev, skill.id, undefined),
+                    )
                   }
                 >
                   クリア
@@ -311,11 +232,13 @@ export function KeybindSettings({
                     }}
                   >
                     <option value="">なし</option>
-                    {SKILLS.filter((s) => s.id !== skill.id).map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.nameJa}
-                      </option>
-                    ))}
+                    {skills
+                      .filter((s) => s.id !== skill.id)
+                      .map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.nameJa}
+                        </option>
+                      ))}
                   </select>
                 </label>
                 <label className="check">

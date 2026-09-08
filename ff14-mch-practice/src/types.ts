@@ -1,5 +1,14 @@
 export type SkillCategory = 'skill' | 'ability'
 
+/** ジョブ ID（FF14 略称） */
+export type JobId = 'MCH' | 'BRD' | 'DNC' | 'RPR'
+
+export type JobInfo = {
+  id: JobId
+  nameJa: string
+  shortJa: string
+}
+
 export type Gauges = {
   heat: number
   battery: number
@@ -9,6 +18,8 @@ export type Skill = {
   id: string
   nameJa: string
   category: SkillCategory
+  /** 所属ジョブ。未指定は機工士扱い（移行用） */
+  jobId?: JobId
   castMs: number
   recastMs: number
   charges?: number
@@ -39,6 +50,7 @@ export type RotationStep = {
 export type Rotation = {
   id: string
   name: string
+  jobId: JobId
   gcdMs: number
   initialGauges: Gauges
   steps: RotationStep[]
@@ -79,6 +91,12 @@ export type KeybindEntry = {
 }
 
 export type Keybinds = Record<string, KeybindEntry>
+
+/** ジョブごとのキーバインド */
+export type KeybindsByJob = Partial<Record<JobId, Keybinds>>
+
+/** ジョブごとのホットバー */
+export type HotbarByJob = Partial<Record<JobId, HotbarLayout>>
 
 export type ScoreEvent =
   | {

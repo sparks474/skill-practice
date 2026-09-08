@@ -207,7 +207,7 @@ export function PracticeView({
     <div className="page practice">
       <header className="page-header compact">
         <div>
-          <p className="brand">MCH Practice</p>
+          <p className="brand">Skill Practice</p>
           <h1>{rotation.name}</h1>
           <p className="lead">
             {snap.stepIndex + 1} / {rotation.steps.length} ·{' '}

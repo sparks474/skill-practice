@@ -1,27 +1,35 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Home } from './components/Home'
 import { KeybindSettings } from './components/KeybindSettings'
 import { PracticeView } from './components/PracticeView'
 import { ResultView } from './components/ResultView'
 import { RotationEditor } from './components/RotationEditor'
+import { SettingsView } from './components/SettingsView'
+import { DEFAULT_JOB_ID } from './data/jobs'
 import {
+  clearSkillKeysConflictingWithMovement,
   createEmptyRotation,
   loadConfig,
-  loadHotbarLayout,
-  loadKeybinds,
+  loadHotbarForJob,
+  loadKeybindsByJob,
+  loadKeybindsForJob,
   loadMovementKeys,
   loadRotations,
-  clearSkillKeysConflictingWithMovement,
+  loadSelectedJob,
   saveConfig,
-  saveHotbarLayout,
-  saveKeybinds,
+  saveHotbarForJob,
+  saveKeybindsByJob,
+  saveKeybindsForJob,
   saveMovementKeys,
   saveRotations,
+  saveSelectedJob,
 } from './storage'
 import type {
   EngineConfig,
   HotbarLayout,
+  JobId,
   Keybinds,
+  KeybindsByJob,
   MovementKeys,
   PracticeSummary,
   Rotation,
@@ -31,6 +39,7 @@ import './App.css'
 type Screen =
   | { name: 'home' }
   | { name: 'edit'; rotationId: string }
+  | { name: 'settings' }
   | { name: 'keybinds' }
   | { name: 'practice'; rotationId: string }
   | {
@@ -41,27 +50,67 @@ type Screen =
 
 function App() {
   const [rotations, setRotations] = useState<Rotation[]>(() => loadRotations())
+  const [selectedJob, setSelectedJob] = useState<JobId>(() => loadSelectedJob())
   const [movementKeys, setMovementKeys] = useState<MovementKeys>(() =>
     loadMovementKeys(),
   )
-  const [keybinds, setKeybinds] = useState<Keybinds>(() => {
+  const [keybindsByJob, setKeybindsByJob] = useState<KeybindsByJob>(() => {
     const move = loadMovementKeys()
-    const cleaned = clearSkillKeysConflictingWithMovement(
-      loadKeybinds(),
+    const byJob = loadKeybindsByJob()
+    const mch = clearSkillKeysConflictingWithMovement(
+      byJob[DEFAULT_JOB_ID] ?? loadKeybindsForJob(DEFAULT_JOB_ID),
       move,
     )
-    saveKeybinds(cleaned)
-    return cleaned
+    const next = { ...byJob, [DEFAULT_JOB_ID]: mch }
+    saveKeybindsByJob(next)
+    return next
   })
   const [config, setConfig] = useState<EngineConfig>(() => loadConfig())
-  const [hotbarLayout, setHotbarLayout] = useState<HotbarLayout>(() =>
-    loadHotbarLayout(),
-  )
+  const [hotbarByJob, setHotbarByJob] = useState<
+    Partial<Record<JobId, HotbarLayout>>
+  >(() => {
+    const binds = loadKeybindsForJob(DEFAULT_JOB_ID)
+    return { [DEFAULT_JOB_ID]: loadHotbarForJob(DEFAULT_JOB_ID, binds) }
+  })
   const [screen, setScreen] = useState<Screen>({ name: 'home' })
+
+  const keybindsForSelected = useMemo((): Keybinds => {
+    return (
+      keybindsByJob[selectedJob] ??
+      loadKeybindsForJob(selectedJob)
+    )
+  }, [keybindsByJob, selectedJob])
+
+  const hotbarForSelected = useMemo((): HotbarLayout => {
+    if (hotbarByJob[selectedJob]) return hotbarByJob[selectedJob]!
+    return loadHotbarForJob(selectedJob, keybindsForSelected)
+  }, [hotbarByJob, selectedJob, keybindsForSelected])
 
   const persistRotations = useCallback((next: Rotation[]) => {
     setRotations(next)
     saveRotations(next)
+  }, [])
+
+  const changeSelectedJob = useCallback((jobId: JobId) => {
+    setSelectedJob(jobId)
+    saveSelectedJob(jobId)
+    setKeybindsByJob((prev) => {
+      if (prev[jobId]) return prev
+      const binds = clearSkillKeysConflictingWithMovement(
+        loadKeybindsForJob(jobId),
+        loadMovementKeys(),
+      )
+      const next = { ...prev, [jobId]: binds }
+      saveKeybindsByJob(next)
+      return next
+    })
+    setHotbarByJob((prev) => {
+      if (prev[jobId]) return prev
+      const binds = loadKeybindsForJob(jobId)
+      const layout = loadHotbarForJob(jobId, binds)
+      saveHotbarForJob(jobId, layout)
+      return { ...prev, [jobId]: layout }
+    })
   }, [])
 
   const goHome = useCallback(() => setScreen({ name: 'home' }), [])
@@ -70,18 +119,62 @@ function App() {
     return rotations.find((r) => r.id === id)
   }
 
+  function keybindsForRotation(rot: Rotation): Keybinds {
+    return keybindsByJob[rot.jobId] ?? loadKeybindsForJob(rot.jobId)
+  }
+
+  function hotbarForRotation(rot: Rotation): HotbarLayout {
+    return (
+      hotbarByJob[rot.jobId] ??
+      loadHotbarForJob(rot.jobId, keybindsForRotation(rot))
+    )
+  }
+
   if (screen.name === 'edit') {
     const rot = findRotation(screen.rotationId)
     if (!rot) return <Missing onHome={goHome} />
     return (
       <RotationEditor
         rotation={rot}
-        keybinds={keybinds}
+        keybinds={keybindsForRotation(rot)}
         onCancel={goHome}
         onSave={(updated) => {
           persistRotations(
             rotations.map((r) => (r.id === updated.id ? updated : r)),
           )
+          if (updated.jobId !== selectedJob) {
+            changeSelectedJob(updated.jobId)
+          }
+          setScreen({ name: 'home' })
+        }}
+      />
+    )
+  }
+
+  if (screen.name === 'settings') {
+    return (
+      <SettingsView
+        config={config}
+        movementKeys={movementKeys}
+        onCancel={goHome}
+        onSave={(cfg, move) => {
+          setConfig(cfg)
+          setMovementKeys(move)
+          saveConfig(cfg)
+          saveMovementKeys(move)
+          // 全ジョブのキーバインドから移動キー衝突を除去
+          setKeybindsByJob((prev) => {
+            const next: KeybindsByJob = { ...prev }
+            for (const jobId of Object.keys(next) as JobId[]) {
+              const cleaned = clearSkillKeysConflictingWithMovement(
+                next[jobId] ?? loadKeybindsForJob(jobId),
+                move,
+              )
+              next[jobId] = cleaned
+              saveKeybindsForJob(jobId, cleaned)
+            }
+            return next
+          })
           setScreen({ name: 'home' })
         }}
       />
@@ -91,20 +184,28 @@ function App() {
   if (screen.name === 'keybinds') {
     return (
       <KeybindSettings
-        keybinds={keybinds}
-        config={config}
+        key={selectedJob}
+        jobId={selectedJob}
+        keybinds={keybindsForSelected}
         movementKeys={movementKeys}
-        hotbarLayout={hotbarLayout}
+        hotbarLayout={hotbarForSelected}
+        onJobChange={changeSelectedJob}
         onCancel={goHome}
-        onSave={(binds, cfg, move, hotbar) => {
-          setKeybinds(binds)
-          setConfig(cfg)
-          setMovementKeys(move)
-          setHotbarLayout(hotbar)
-          saveKeybinds(binds)
-          saveConfig(cfg)
-          saveMovementKeys(move)
-          saveHotbarLayout(hotbar)
+        onSave={(binds, hotbar) => {
+          const cleaned = clearSkillKeysConflictingWithMovement(
+            binds,
+            movementKeys,
+          )
+          setKeybindsByJob((prev) => {
+            const next = { ...prev, [selectedJob]: cleaned }
+            saveKeybindsByJob(next)
+            return next
+          })
+          setHotbarByJob((prev) => {
+            const next = { ...prev, [selectedJob]: hotbar }
+            saveHotbarForJob(selectedJob, hotbar)
+            return next
+          })
           setScreen({ name: 'home' })
         }}
       />
@@ -117,9 +218,9 @@ function App() {
     return (
       <PracticeView
         rotation={rot}
-        keybinds={keybinds}
+        keybinds={keybindsForRotation(rot)}
         movementKeys={movementKeys}
-        hotbarLayout={hotbarLayout}
+        hotbarLayout={hotbarForRotation(rot)}
         config={config}
         onAbort={goHome}
         onFinish={(summary) =>
@@ -150,11 +251,14 @@ function App() {
   return (
     <Home
       rotations={rotations}
+      selectedJob={selectedJob}
+      onSelectedJobChange={changeSelectedJob}
       onPractice={(id) => setScreen({ name: 'practice', rotationId: id })}
       onEdit={(id) => setScreen({ name: 'edit', rotationId: id })}
+      onOpenSettings={() => setScreen({ name: 'settings' })}
       onOpenKeybinds={() => setScreen({ name: 'keybinds' })}
-      onCreate={() => {
-        const created = createEmptyRotation()
+      onCreate={(jobId) => {
+        const created = createEmptyRotation(jobId)
         persistRotations([...rotations, created])
         setScreen({ name: 'edit', rotationId: created.id })
       }}
