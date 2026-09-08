@@ -1,4 +1,4 @@
-import type { Keybinds } from '../types'
+import type { Keybinds, MovementKeys } from '../types'
 import { getSwapPartner } from '../data/skillSlots'
 
 /** KeyboardEvent から保存用のキー文字列を正規化 */
@@ -12,8 +12,25 @@ export function normalizeKeyEvent(e: KeyboardEvent): string {
 export function formatKeyLabel(key: string | undefined): string {
   if (!key) return '—'
   if (key === 'space') return 'Space'
+  if (key === 'arrowup') return '↑'
+  if (key === 'arrowdown') return '↓'
+  if (key === 'arrowleft') return '←'
+  if (key === 'arrowright') return '→'
   if (key.length === 1) return key.toUpperCase()
   return key
+}
+
+export function isMovementKey(
+  movement: MovementKeys,
+  key: string,
+): boolean {
+  const normalized = key.toLowerCase()
+  return (
+    movement.up?.toLowerCase() === normalized ||
+    movement.down?.toLowerCase() === normalized ||
+    movement.left?.toLowerCase() === normalized ||
+    movement.right?.toLowerCase() === normalized
+  )
 }
 
 /**

@@ -7,24 +7,81 @@ import {
   setSwapPartner,
 } from '../data/skillSlots'
 import { formatKeyLabel } from '../input/keys'
-import type { EngineConfig, Keybinds } from '../types'
+import type {
+  EngineConfig,
+  Keybinds,
+  MovementDirection,
+  MovementKeys,
+} from '../types'
 
 type Props = {
   keybinds: Keybinds
   config: EngineConfig
-  onSave: (keybinds: Keybinds, config: EngineConfig) => void
+  movementKeys: MovementKeys
+  onSave: (
+    keybinds: Keybinds,
+    config: EngineConfig,
+    movementKeys: MovementKeys,
+  ) => void
   onCancel: () => void
 }
 
-export function KeybindSettings({ keybinds, config, onSave, onCancel }: Props) {
+type ListenTarget =
+  | { kind: 'skill'; skillId: string }
+  | { kind: 'move'; dir: MovementDirection }
+
+const MOVE_ROWS: { dir: MovementDirection; label: string }[] = [
+  { dir: 'up', label: '上' },
+  { dir: 'down', label: '下' },
+  { dir: 'left', label: '左' },
+  { dir: 'right', label: '右' },
+]
+
+function clearKeyFromSkills(keybinds: Keybinds, key: string): Keybinds {
+  const next: Keybinds = { ...keybinds }
+  const normalized = key.toLowerCase()
+  for (const id of Object.keys(next)) {
+    if (next[id]?.key?.toLowerCase() === normalized) {
+      next[id] = { ...next[id], key: undefined }
+    }
+  }
+  return next
+}
+
+function clearKeyFromMovement(
+  movement: MovementKeys,
+  key: string,
+  except?: MovementDirection,
+): MovementKeys {
+  const next = { ...movement }
+  const normalized = key.toLowerCase()
+  for (const dir of ['up', 'down', 'left', 'right'] as MovementDirection[]) {
+    if (dir === except) continue
+    if (next[dir]?.toLowerCase() === normalized) {
+      next[dir] = undefined
+    }
+  }
+  return next
+}
+
+export function KeybindSettings({
+  keybinds,
+  config,
+  movementKeys,
+  onSave,
+  onCancel,
+}: Props) {
   const [draftBinds, setDraftBinds] = useState<Keybinds>(() =>
     structuredClone(keybinds),
   )
   const [draftConfig, setDraftConfig] = useState<EngineConfig>({ ...config })
-  const [listeningId, setListeningId] = useState<string | null>(null)
+  const [draftMove, setDraftMove] = useState<MovementKeys>(() => ({
+    ...movementKeys,
+  }))
+  const [listening, setListening] = useState<ListenTarget | null>(null)
 
   useEffect(() => {
-    if (!listeningId) return
+    if (!listening) return
     const onKey = (e: KeyboardEvent) => {
       e.preventDefault()
       const key =
@@ -34,15 +91,25 @@ export function KeybindSettings({ keybinds, config, onSave, onCancel }: Props) {
             ? e.key.toLowerCase()
             : e.key.toLowerCase()
       if (key === 'escape') {
-        setListeningId(null)
+        setListening(null)
         return
       }
-      setDraftBinds((prev) => assignKey(prev, listeningId, key))
-      setListeningId(null)
+
+      if (listening.kind === 'skill') {
+        setDraftMove((prev) => clearKeyFromMovement(prev, key))
+        setDraftBinds((prev) => assignKey(prev, listening.skillId, key))
+      } else {
+        setDraftBinds((prev) => clearKeyFromSkills(prev, key))
+        setDraftMove((prev) => ({
+          ...clearKeyFromMovement(prev, key, listening.dir),
+          [listening.dir]: key,
+        }))
+      }
+      setListening(null)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [listeningId])
+  }, [listening])
 
   const rows = useMemo(() => {
     const list = [...SKILLS]
@@ -61,7 +128,7 @@ export function KeybindSettings({ keybinds, config, onSave, onCancel }: Props) {
         <div>
           <p className="brand">MCH Practice</p>
           <h1>キー設定</h1>
-          <p className="lead">キー割り当て・置き換え・不要スキル</p>
+          <p className="lead">キー割り当て・移動・置き換え・不要スキル</p>
         </div>
         <div className="header-actions">
           <button type="button" className="btn ghost" onClick={onCancel}>
@@ -70,7 +137,7 @@ export function KeybindSettings({ keybinds, config, onSave, onCancel }: Props) {
           <button
             type="button"
             className="btn primary"
-            onClick={() => onSave(draftBinds, draftConfig)}
+            onClick={() => onSave(draftBinds, draftConfig, draftMove)}
           >
             保存
           </button>
@@ -133,6 +200,44 @@ export function KeybindSettings({ keybinds, config, onSave, onCancel }: Props) {
       </section>
 
       <section>
+        <h2>移動キー</h2>
+        <p className="muted">
+          練習中に押してもスキル入力にはならず、ミスにもなりません（初期は WASD）。
+        </p>
+        <ul className="keybind-list">
+          {MOVE_ROWS.map(({ dir, label }) => {
+            const listeningHere =
+              listening?.kind === 'move' && listening.dir === dir
+            return (
+              <li key={dir} className="keybind-row">
+                <span className="keybind-name">移動・{label}</span>
+                <span className="muted">移動</span>
+                <span className="key-badge">
+                  {formatKeyLabel(draftMove[dir])}
+                </span>
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={() => setListening({ kind: 'move', dir })}
+                >
+                  {listeningHere ? '入力待ち…' : '変更'}
+                </button>
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={() =>
+                    setDraftMove((prev) => ({ ...prev, [dir]: undefined }))
+                  }
+                >
+                  クリア
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      </section>
+
+      <section>
         <h2>キー割り当て</h2>
         <p className="muted">
           「変更」でキー割り当て。置き換えを設定すると同じキー枠でトグルします（例:
@@ -144,6 +249,8 @@ export function KeybindSettings({ keybinds, config, onSave, onCancel }: Props) {
             const unused = Boolean(bind.unused)
             const partnerId = getSwapPartner(draftBinds, skill.id)
             const keyLabel = formatKeyLabel(effectiveKey(draftBinds, skill.id))
+            const listeningHere =
+              listening?.kind === 'skill' && listening.skillId === skill.id
             return (
               <li
                 key={skill.id}
@@ -158,9 +265,11 @@ export function KeybindSettings({ keybinds, config, onSave, onCancel }: Props) {
                   type="button"
                   className="btn ghost"
                   disabled={unused}
-                  onClick={() => setListeningId(skill.id)}
+                  onClick={() =>
+                    setListening({ kind: 'skill', skillId: skill.id })
+                  }
                 >
-                  {listeningId === skill.id ? '入力待ち…' : '変更'}
+                  {listeningHere ? '入力待ち…' : '変更'}
                 </button>
                 <button
                   type="button"
@@ -175,7 +284,10 @@ export function KeybindSettings({ keybinds, config, onSave, onCancel }: Props) {
                 <label className="check">
                   <input
                     type="checkbox"
-                    checked={Boolean(bind.mouse) || !effectiveKey(draftBinds, skill.id)}
+                    checked={
+                      Boolean(bind.mouse) ||
+                      !effectiveKey(draftBinds, skill.id)
+                    }
                     disabled={unused}
                     onChange={(e) =>
                       setDraftBinds((prev) => {
