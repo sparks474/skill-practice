@@ -147,6 +147,39 @@ export type PracticeSummary = {
   elapsedMs: number
 }
 
+/** フリー練習のイベント */
+export type FreeScoreEvent =
+  | {
+      type: 'cast'
+      skillId: string
+      atMs: number
+      /** この発動時点までの GCD 空き寄与（参考） */
+      usedQueue: boolean
+    }
+  | {
+      type: 'gauge_overflow'
+      skillId: string
+      gauge: 'heat' | 'battery'
+      atMs: number
+    }
+  | {
+      type: 'fail'
+      skillId: string
+      reason: string
+      atMs: number
+    }
+
+export type FreePracticeSummary = {
+  elapsedMs: number
+  /** GCD が回せるのに Weaponskill を押さなかった累計 */
+  idleWasteMs: number
+  castCount: number
+  heatOverflow: number
+  batteryOverflow: number
+  failCount: number
+  events: FreeScoreEvent[]
+}
+
 export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
   defaultAnimationLockMs: 670,
   queueWindowMs: 500,

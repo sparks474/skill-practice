@@ -6,6 +6,7 @@ type Props = {
   selectedJob: JobId
   onSelectedJobChange: (jobId: JobId) => void
   onPractice: (id: string) => void
+  onFreePractice: () => void
   onEdit: (id: string) => void
   onCreate: (jobId: JobId) => void
   onDelete: (id: string) => void
@@ -18,6 +19,7 @@ export function Home({
   selectedJob,
   onSelectedJobChange,
   onPractice,
+  onFreePractice,
   onEdit,
   onCreate,
   onDelete,
@@ -50,6 +52,9 @@ export function Home({
               ))}
             </select>
           </label>
+          <button type="button" className="btn primary" onClick={onFreePractice}>
+            フリー練習
+          </button>
           <button type="button" className="btn ghost" onClick={onOpenSettings}>
             設定
           </button>

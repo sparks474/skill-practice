@@ -1,11 +1,13 @@
 import { useCallback, useMemo, useState } from 'react'
+import { FreePracticeView } from './components/FreePracticeView'
+import { FreeResultView } from './components/FreeResultView'
 import { Home } from './components/Home'
 import { KeybindSettings } from './components/KeybindSettings'
 import { PracticeView } from './components/PracticeView'
 import { ResultView } from './components/ResultView'
 import { RotationEditor } from './components/RotationEditor'
 import { SettingsView } from './components/SettingsView'
-import { DEFAULT_JOB_ID } from './data/jobs'
+import { DEFAULT_JOB_ID, jobNameJa } from './data/jobs'
 import {
   clearSkillKeysConflictingWithMovement,
   createEmptyRotation,
@@ -26,6 +28,7 @@ import {
 } from './storage'
 import type {
   EngineConfig,
+  FreePracticeSummary,
   HotbarLayout,
   JobId,
   Keybinds,
@@ -47,6 +50,8 @@ type Screen =
       rotationId: string
       summary: PracticeSummary
     }
+  | { name: 'free-practice' }
+  | { name: 'free-result'; summary: FreePracticeSummary }
 
 function App() {
   const [rotations, setRotations] = useState<Rotation[]>(() => loadRotations())
@@ -248,12 +253,44 @@ function App() {
     )
   }
 
+  if (screen.name === 'free-practice') {
+    const gcdMs =
+      rotations.find((r) => r.jobId === selectedJob)?.gcdMs ?? 2500
+    return (
+      <FreePracticeView
+        jobId={selectedJob}
+        jobNameJa={jobNameJa(selectedJob)}
+        gcdMs={gcdMs}
+        keybinds={keybindsForSelected}
+        movementKeys={movementKeys}
+        hotbarLayout={hotbarForSelected}
+        config={config}
+        onAbort={goHome}
+        onFinish={(summary) =>
+          setScreen({ name: 'free-result', summary })
+        }
+      />
+    )
+  }
+
+  if (screen.name === 'free-result') {
+    return (
+      <FreeResultView
+        summary={screen.summary}
+        jobNameJa={jobNameJa(selectedJob)}
+        onHome={goHome}
+        onRetry={() => setScreen({ name: 'free-practice' })}
+      />
+    )
+  }
+
   return (
     <Home
       rotations={rotations}
       selectedJob={selectedJob}
       onSelectedJobChange={changeSelectedJob}
       onPractice={(id) => setScreen({ name: 'practice', rotationId: id })}
+      onFreePractice={() => setScreen({ name: 'free-practice' })}
       onEdit={(id) => setScreen({ name: 'edit', rotationId: id })}
       onOpenSettings={() => setScreen({ name: 'settings' })}
       onOpenKeybinds={() => setScreen({ name: 'keybinds' })}
