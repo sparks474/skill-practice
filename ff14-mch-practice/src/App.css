@@ -424,6 +424,12 @@ select {
   align-items: center;
 }
 
+.hotbar-size-label {
+  align-self: center;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
 .hotbar-editor-header h2 {
   margin: 0;
 }
@@ -524,7 +530,8 @@ select {
 @media (max-width: 900px) {
   .hotbar.hotbar-grid,
   .hotbar-grid.editor {
-    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    /* 狭い画面でも設定列数を尊重（最低でも見やすい幅は CSS minmax 側に任せる） */
+    overflow-x: auto;
   }
 }
 
