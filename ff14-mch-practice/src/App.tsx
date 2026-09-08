@@ -11,6 +11,7 @@ import {
   loadKeybinds,
   loadMovementKeys,
   loadRotations,
+  clearSkillKeysConflictingWithMovement,
   saveConfig,
   saveHotbarLayout,
   saveKeybinds,
@@ -40,11 +41,19 @@ type Screen =
 
 function App() {
   const [rotations, setRotations] = useState<Rotation[]>(() => loadRotations())
-  const [keybinds, setKeybinds] = useState<Keybinds>(() => loadKeybinds())
-  const [config, setConfig] = useState<EngineConfig>(() => loadConfig())
   const [movementKeys, setMovementKeys] = useState<MovementKeys>(() =>
     loadMovementKeys(),
   )
+  const [keybinds, setKeybinds] = useState<Keybinds>(() => {
+    const move = loadMovementKeys()
+    const cleaned = clearSkillKeysConflictingWithMovement(
+      loadKeybinds(),
+      move,
+    )
+    saveKeybinds(cleaned)
+    return cleaned
+  })
+  const [config, setConfig] = useState<EngineConfig>(() => loadConfig())
   const [hotbarLayout, setHotbarLayout] = useState<HotbarLayout>(() =>
     loadHotbarLayout(),
   )

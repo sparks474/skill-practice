@@ -127,6 +127,28 @@ export function saveMovementKeys(keys: MovementKeys): void {
   localStorage.setItem(MOVEMENT_KEY, JSON.stringify(keys))
 }
 
+/** 移動キーとスキルキーの重複をスキル側から外す */
+export function clearSkillKeysConflictingWithMovement(
+  keybinds: Keybinds,
+  movement: MovementKeys,
+): Keybinds {
+  const moveSet = new Set(
+    [movement.up, movement.down, movement.left, movement.right]
+      .filter(Boolean)
+      .map((k) => k!.toLowerCase()),
+  )
+  if (moveSet.size === 0) return keybinds
+  let changed = false
+  const next: Keybinds = { ...keybinds }
+  for (const [id, bind] of Object.entries(next)) {
+    if (bind.key && moveSet.has(bind.key.toLowerCase())) {
+      next[id] = { ...bind, key: undefined }
+      changed = true
+    }
+  }
+  return changed ? next : keybinds
+}
+
 export function loadHotbarLayout(keybinds?: Keybinds): HotbarLayout {
   const binds = keybinds ?? (canUseStorage() ? loadKeybinds() : createDefaultKeybinds())
   if (!canUseStorage()) return createDefaultHotbarLayout()
