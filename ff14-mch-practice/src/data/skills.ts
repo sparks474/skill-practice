@@ -319,6 +319,14 @@ export const SKILLS: Skill[] = [
     recastMs: 60_000,
     tags: ['aoe'],
   },
+  {
+    id: 'potion',
+    nameJa: '薬',
+    category: 'ability',
+    castMs: 0,
+    recastMs: 300_000, // 固有リキャスト 5分（効果なし・タイミング練習用）
+    tags: ['item'],
+  },
 ]
 
 export const SKILL_BY_ID: Record<string, Skill> = Object.fromEntries(
