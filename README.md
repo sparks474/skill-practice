@@ -4,11 +4,13 @@ FF14 機工士（MCH）のキーマウスキル回し練習ツールです。
 
 ## 遊ぶ
 
-GitHub Pages（`main` 反映後）:
+GitHub Pages:
 
 **https://sparks474.github.io/skill-practice/**
 
-初回は Settings → Pages → Source を **GitHub Actions** にしてください。
+`main` への push で自動デプロイされます。404 のときは [Actions](https://github.com/sparks474/skill-practice/actions) の最新「Deploy GitHub Pages」が成功しているか確認し、失敗していれば **Re-run all jobs** してください。
+
+初回のみ Settings → Pages → Source を **GitHub Actions** にします。
 
 ## ローカル開発
 
