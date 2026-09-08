@@ -54,6 +54,16 @@ export type EngineConfig = {
   okWindowMs: number
 }
 
+/** 移動キー（練習中は入力しても無視・ミス判定なし） */
+export type MovementKeys = {
+  up?: string
+  down?: string
+  left?: string
+  right?: string
+}
+
+export type MovementDirection = keyof MovementKeys
+
 export type KeybindEntry = {
   key?: string
   mouse?: boolean
@@ -110,4 +120,12 @@ export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
   queueWindowMs: 500,
   perfectWindowMs: 50,
   okWindowMs: 150,
+}
+
+/** FF14 既定に近い WASD */
+export const DEFAULT_MOVEMENT_KEYS: MovementKeys = {
+  up: 'w',
+  down: 's',
+  left: 'a',
+  right: 'd',
 }

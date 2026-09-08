@@ -8,10 +8,11 @@ import {
   slotIdFor,
 } from '../data/skillSlots'
 import { PracticeRuntime, type RuntimeSnapshot } from '../engine/runtime'
-import { formatKeyLabel, normalizeKeyEvent, skillIdForKey } from '../input/keys'
+import { formatKeyLabel, isMovementKey, normalizeKeyEvent, skillIdForKey } from '../input/keys'
 import type {
   EngineConfig,
   Keybinds,
+  MovementKeys,
   PracticeSummary,
   Rotation,
 } from '../types'
@@ -19,6 +20,7 @@ import type {
 type Props = {
   rotation: Rotation
   keybinds: Keybinds
+  movementKeys: MovementKeys
   config: EngineConfig
   onFinish: (summary: PracticeSummary) => void
   onAbort: () => void
@@ -47,6 +49,7 @@ const HOTBAR_IDS = [
 export function PracticeView({
   rotation,
   keybinds,
+  movementKeys,
   config,
   onFinish,
   onAbort,
@@ -181,6 +184,11 @@ export function PracticeView({
       if (e.repeat) return
       if (e.metaKey || e.ctrlKey || e.altKey) return
       const key = normalizeKeyEvent(e)
+      // 移動キーは完全無視（ミス判定もしない）
+      if (isMovementKey(movementKeys, key)) {
+        e.preventDefault()
+        return
+      }
       const skillId = skillIdForKey(keybinds, key, swapActiveRef.current)
       if (!skillId) return
       e.preventDefault()
@@ -189,7 +197,7 @@ export function PracticeView({
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [running, keybinds])
+  }, [running, keybinds, movementKeys])
 
   function clickSkill(skillId: string) {
     const bind = keybinds[skillId]

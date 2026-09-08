@@ -2,14 +2,17 @@ import { createDefaultKeybinds } from './data/defaultKeybinds'
 import { SAMPLE_ROTATION } from './data/sampleRotation'
 import {
   DEFAULT_ENGINE_CONFIG,
+  DEFAULT_MOVEMENT_KEYS,
   type EngineConfig,
   type Keybinds,
+  type MovementKeys,
   type Rotation,
 } from './types'
 
 const ROTATIONS_KEY = 'ff14-mch-rotations'
 const KEYBINDS_KEY = 'ff14-mch-keybinds'
 const CONFIG_KEY = 'ff14-mch-config'
+const MOVEMENT_KEY = 'ff14-mch-movement'
 
 function canUseStorage(): boolean {
   return typeof localStorage !== 'undefined'
@@ -99,6 +102,26 @@ export function loadConfig(): EngineConfig {
 export function saveConfig(config: EngineConfig): void {
   if (!canUseStorage()) return
   localStorage.setItem(CONFIG_KEY, JSON.stringify(config))
+}
+
+export function loadMovementKeys(): MovementKeys {
+  if (!canUseStorage()) return { ...DEFAULT_MOVEMENT_KEYS }
+  try {
+    const raw = localStorage.getItem(MOVEMENT_KEY)
+    if (!raw) {
+      const defaults = { ...DEFAULT_MOVEMENT_KEYS }
+      saveMovementKeys(defaults)
+      return defaults
+    }
+    return { ...DEFAULT_MOVEMENT_KEYS, ...(JSON.parse(raw) as MovementKeys) }
+  } catch {
+    return { ...DEFAULT_MOVEMENT_KEYS }
+  }
+}
+
+export function saveMovementKeys(keys: MovementKeys): void {
+  if (!canUseStorage()) return
+  localStorage.setItem(MOVEMENT_KEY, JSON.stringify(keys))
 }
 
 export function cloneSample(): Rotation {

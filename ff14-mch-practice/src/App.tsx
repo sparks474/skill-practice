@@ -8,14 +8,17 @@ import {
   createEmptyRotation,
   loadConfig,
   loadKeybinds,
+  loadMovementKeys,
   loadRotations,
   saveConfig,
   saveKeybinds,
+  saveMovementKeys,
   saveRotations,
 } from './storage'
 import type {
   EngineConfig,
   Keybinds,
+  MovementKeys,
   PracticeSummary,
   Rotation,
 } from './types'
@@ -36,6 +39,9 @@ function App() {
   const [rotations, setRotations] = useState<Rotation[]>(() => loadRotations())
   const [keybinds, setKeybinds] = useState<Keybinds>(() => loadKeybinds())
   const [config, setConfig] = useState<EngineConfig>(() => loadConfig())
+  const [movementKeys, setMovementKeys] = useState<MovementKeys>(() =>
+    loadMovementKeys(),
+  )
   const [screen, setScreen] = useState<Screen>({ name: 'home' })
 
   const persistRotations = useCallback((next: Rotation[]) => {
@@ -72,12 +78,15 @@ function App() {
       <KeybindSettings
         keybinds={keybinds}
         config={config}
+        movementKeys={movementKeys}
         onCancel={goHome}
-        onSave={(binds, cfg) => {
+        onSave={(binds, cfg, move) => {
           setKeybinds(binds)
           setConfig(cfg)
+          setMovementKeys(move)
           saveKeybinds(binds)
           saveConfig(cfg)
+          saveMovementKeys(move)
           setScreen({ name: 'home' })
         }}
       />
@@ -91,6 +100,7 @@ function App() {
       <PracticeView
         rotation={rot}
         keybinds={keybinds}
+        movementKeys={movementKeys}
         config={config}
         onAbort={goHome}
         onFinish={(summary) =>
