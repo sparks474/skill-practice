@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type DragEvent } from 'react'
 import { JOBS, jobNameJa } from '../data/jobs'
 import { getSkill, getSkillsForJob } from '../data/skills'
-import type { JobId, Keybinds, Rotation, SkillCategory } from '../types'
+import type { JobId, Keybinds, Rotation, RotationStep, SkillCategory } from '../types'
 
 type Props = {
   rotation: Rotation
@@ -10,15 +10,52 @@ type Props = {
   onCancel: () => void
 }
 
+/** 編集中のみ使う安定 ID（保存時は捨てる） */
+type EditorStep = RotationStep & { uid: string }
+
+type DragPayload =
+  | { kind: 'reorder'; fromIndex: number }
+  | { kind: 'add'; skillId: string }
+
+const DRAG_MIME = 'application/x-rotation-editor'
+
+function newUid(): string {
+  return `s-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+}
+
+function toEditorSteps(steps: RotationStep[]): EditorStep[] {
+  return steps.map((s) => ({ skillId: s.skillId, uid: newUid() }))
+}
+
+function insertStep(
+  steps: EditorStep[],
+  item: EditorStep,
+  fromIndex: number | null,
+  insertBefore: number,
+): EditorStep[] {
+  const next = steps.slice()
+  if (fromIndex != null) {
+    next.splice(fromIndex, 1)
+  }
+  const dest =
+    fromIndex != null && fromIndex < insertBefore
+      ? insertBefore - 1
+      : insertBefore
+  next.splice(Math.max(0, Math.min(dest, next.length)), 0, item)
+  return next
+}
+
 export function RotationEditor({ rotation, keybinds, onSave, onCancel }: Props) {
-  const [draft, setDraft] = useState<Rotation>(() => ({
+  const [draft, setDraft] = useState(() => ({
     ...rotation,
     jobId: rotation.jobId,
     initialGauges: { ...rotation.initialGauges },
-    steps: rotation.steps.map((s) => ({ ...s })),
+    steps: toEditorSteps(rotation.steps),
   }))
   const [filter, setFilter] = useState<'all' | SkillCategory>('all')
   const [query, setQuery] = useState('')
+  const [dropIndex, setDropIndex] = useState<number | null>(null)
+  const [dragging, setDragging] = useState(false)
 
   const jobSkills = useMemo(
     () => getSkillsForJob(draft.jobId),
@@ -37,7 +74,7 @@ export function RotationEditor({ rotation, keybinds, onSave, onCancel }: Props) 
   function updateStep(index: number, skillId: string) {
     setDraft((d) => {
       const steps = d.steps.slice()
-      steps[index] = { skillId }
+      steps[index] = { ...steps[index], skillId }
       return { ...d, steps }
     })
   }
@@ -59,20 +96,96 @@ export function RotationEditor({ rotation, keybinds, onSave, onCancel }: Props) 
     }))
   }
 
-  function addSkill(skillId: string) {
-    setDraft((d) => ({
-      ...d,
-      steps: [...d.steps, { skillId }],
-    }))
+  function addSkill(skillId: string, insertBefore?: number) {
+    setDraft((d) => {
+      const item: EditorStep = { skillId, uid: newUid() }
+      if (insertBefore == null || insertBefore >= d.steps.length) {
+        return { ...d, steps: [...d.steps, item] }
+      }
+      return {
+        ...d,
+        steps: insertStep(d.steps, item, null, insertBefore),
+      }
+    })
   }
 
   function changeJob(jobId: JobId) {
     setDraft((d) => ({
       ...d,
       jobId,
-      // ジョブ変更時は他ジョブの手順をクリア
       steps: d.jobId === jobId ? d.steps : [],
     }))
+  }
+
+  function readPayload(e: DragEvent): DragPayload | null {
+    const raw = e.dataTransfer.getData(DRAG_MIME)
+    if (!raw) return null
+    try {
+      return JSON.parse(raw) as DragPayload
+    } catch {
+      return null
+    }
+  }
+
+  function onDragStartStep(e: DragEvent, fromIndex: number) {
+    const payload: DragPayload = { kind: 'reorder', fromIndex }
+    const raw = JSON.stringify(payload)
+    e.dataTransfer.setData(DRAG_MIME, raw)
+    e.dataTransfer.setData('text/plain', raw)
+    e.dataTransfer.effectAllowed = 'move'
+    setDragging(true)
+  }
+
+  function onDragStartPalette(e: DragEvent, skillId: string) {
+    const payload: DragPayload = { kind: 'add', skillId }
+    const raw = JSON.stringify(payload)
+    e.dataTransfer.setData(DRAG_MIME, raw)
+    e.dataTransfer.setData('text/plain', raw)
+    e.dataTransfer.effectAllowed = 'copyMove'
+    setDragging(true)
+  }
+
+  function onDragEnd() {
+    setDragging(false)
+    setDropIndex(null)
+  }
+
+  function onDragOverSlot(e: DragEvent, index: number) {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (dropIndex !== index) setDropIndex(index)
+  }
+
+  function onDropAt(e: DragEvent, insertBefore: number) {
+    e.preventDefault()
+    const payload =
+      readPayload(e) ??
+      (() => {
+        try {
+          return JSON.parse(e.dataTransfer.getData('text/plain')) as DragPayload
+        } catch {
+          return null
+        }
+      })()
+    setDragging(false)
+    setDropIndex(null)
+    if (!payload) return
+
+    if (payload.kind === 'add') {
+      addSkill(payload.skillId, insertBefore)
+      return
+    }
+
+    setDraft((d) => {
+      const from = payload.fromIndex
+      if (from < 0 || from >= d.steps.length) return d
+      if (insertBefore === from || insertBefore === from + 1) return d
+      const item = d.steps[from]
+      return {
+        ...d,
+        steps: insertStep(d.steps, item, from, insertBefore),
+      }
+    })
   }
 
   return (
@@ -81,6 +194,9 @@ export function RotationEditor({ rotation, keybinds, onSave, onCancel }: Props) 
         <div>
           <p className="brand">Skill Practice</p>
           <h1>回し編集</h1>
+          <p className="lead muted">
+            手順はドラッグで並べ替え。右の一覧からドラッグまたはクリックで追加できます。
+          </p>
         </div>
         <div className="header-actions">
           <button type="button" className="btn ghost" onClick={onCancel}>
@@ -92,6 +208,7 @@ export function RotationEditor({ rotation, keybinds, onSave, onCancel }: Props) 
             onClick={() =>
               onSave({
                 ...draft,
+                steps: draft.steps.map(({ skillId }) => ({ skillId })),
                 updatedAt: Date.now(),
               })
             }
@@ -235,15 +352,34 @@ export function RotationEditor({ rotation, keybinds, onSave, onCancel }: Props) 
       <div className="editor-grid">
         <section>
           <h2>手順（{draft.steps.length}）</h2>
-          <ol className="step-list">
+          <ol
+            className={`step-list ${dragging ? 'is-dropping' : ''}`}
+            onDragLeave={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                setDropIndex(null)
+              }
+            }}
+          >
             {draft.steps.map((step, i) => {
               const skill = getSkill(step.skillId)
               return (
-                <li key={`${step.skillId}-${i}`}>
+                <li
+                  key={step.uid}
+                  className={`step-row ${dropIndex === i ? 'drop-before' : ''}`}
+                  draggable
+                  onDragStart={(e) => onDragStartStep(e, i)}
+                  onDragEnd={onDragEnd}
+                  onDragOver={(e) => onDragOverSlot(e, i)}
+                  onDrop={(e) => onDropAt(e, i)}
+                >
+                  <span className="step-handle" title="ドラッグで移動" aria-hidden>
+                    ⋮⋮
+                  </span>
                   <span className="step-idx">{i + 1}</span>
                   <select
                     value={step.skillId}
                     onChange={(e) => updateStep(i, e.target.value)}
+                    onMouseDown={(e) => e.stopPropagation()}
                   >
                     {jobSkills
                       .filter(
@@ -265,6 +401,7 @@ export function RotationEditor({ rotation, keybinds, onSave, onCancel }: Props) 
                     type="button"
                     className="btn ghost"
                     onClick={() => moveStep(i, -1)}
+                    aria-label="上へ"
                   >
                     ↑
                   </button>
@@ -272,6 +409,7 @@ export function RotationEditor({ rotation, keybinds, onSave, onCancel }: Props) 
                     type="button"
                     className="btn ghost"
                     onClick={() => moveStep(i, 1)}
+                    aria-label="下へ"
                   >
                     ↓
                   </button>
@@ -285,6 +423,15 @@ export function RotationEditor({ rotation, keybinds, onSave, onCancel }: Props) 
                 </li>
               )
             })}
+            <li
+              className={`step-drop-end ${dropIndex === draft.steps.length ? 'drop-before' : ''}`}
+              onDragOver={(e) => onDragOverSlot(e, draft.steps.length)}
+              onDrop={(e) => onDropAt(e, draft.steps.length)}
+            >
+              {draft.steps.length === 0
+                ? 'ここにスキルをドロップ（または右から追加）'
+                : '末尾にドロップ'}
+            </li>
           </ol>
         </section>
 
@@ -323,9 +470,15 @@ export function RotationEditor({ rotation, keybinds, onSave, onCancel }: Props) 
               <li key={s.id}>
                 <button
                   type="button"
-                  className="btn ghost wide"
+                  className="btn ghost wide skill-picker-item"
+                  draggable
+                  onDragStart={(e) => onDragStartPalette(e, s.id)}
+                  onDragEnd={onDragEnd}
                   onClick={() => addSkill(s.id)}
                 >
+                  <span className="step-handle" aria-hidden>
+                    ⋮⋮
+                  </span>
                   <span>{s.nameJa}</span>
                   <span className="muted">
                     {s.category === 'skill' ? 'スキル' : 'アビ'}

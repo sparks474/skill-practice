@@ -265,6 +265,57 @@ select {
   border-bottom: 1px solid var(--line);
 }
 
+.step-list.is-dropping .step-row,
+.step-list.is-dropping .step-drop-end {
+  transition: background 0.1s ease, box-shadow 0.1s ease;
+}
+
+.step-row {
+  cursor: grab;
+}
+
+.step-row:active {
+  cursor: grabbing;
+}
+
+.step-row.drop-before,
+.step-drop-end.drop-before {
+  box-shadow: inset 0 2px 0 0 var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.step-handle {
+  color: var(--muted);
+  letter-spacing: -0.12em;
+  font-size: 0.85rem;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.step-drop-end {
+  list-style: none;
+  min-height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 4px;
+  padding: 10px 12px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.skill-picker-item {
+  justify-content: flex-start;
+  gap: 8px;
+  cursor: grab;
+}
+
+.skill-picker-item:active {
+  cursor: grabbing;
+}
+
 .keybind-row.unused {
   opacity: 0.45;
 }
