@@ -65,10 +65,23 @@ export function loadRotations(): Rotation[] {
     const normalized = parsed
       .filter((r): r is Partial<Rotation> & { id: string } => Boolean(r?.id))
       .map(normalizeRotation)
+      .map((r) =>
+        // 同梱サンプルはコード側の最新手順に更新
+        r.id === SAMPLE_ROTATION.id || r.isSample
+          ? cloneSample()
+          : r,
+      )
     if (!normalized.some((r) => r.isSample || r.id === SAMPLE_ROTATION.id)) {
       return [cloneSample(), ...normalized]
     }
-    return normalized
+    // cloneSample で二重サンプルにならないよう、サンプルは先頭に1本
+    const sample = normalized.find(
+      (r) => r.id === SAMPLE_ROTATION.id || r.isSample,
+    )
+    const others = normalized.filter(
+      (r) => r.id !== SAMPLE_ROTATION.id && !r.isSample,
+    )
+    return sample ? [sample, ...others] : [cloneSample(), ...others]
   } catch {
     return [cloneSample()]
   }
