@@ -56,6 +56,8 @@ type InternalState = {
   events: ScoreEvent[]
   lastFeedback: string | null
   started: boolean
+  /** 直前に成功発動したスキル（硬直中の連打無視用） */
+  lastCastSkillId: string | null
 }
 
 function clampGauge(n: number): number {
@@ -93,6 +95,7 @@ export class PracticeRuntime {
       events: [],
       lastFeedback: null,
       started: false,
+      lastCastSkillId: null,
     }
   }
 
@@ -185,6 +188,14 @@ export class PracticeRuntime {
     }
 
     if (skillId !== expected) {
+      // A→B で A 連打の残り: 直前スキルの硬直中は押し間違いにしない
+      if (
+        this.state.lastCastSkillId != null &&
+        skillId === this.state.lastCastSkillId &&
+        this.state.nowMs < this.state.animLockUntil
+      ) {
+        return '硬直中（無視）'
+      }
       const event: ScoreEvent = {
         type: 'wrong_input',
         skillId,
@@ -412,6 +423,7 @@ export class PracticeRuntime {
     const lock =
       skill.animationLockMs ?? this.config.defaultAnimationLockMs
     this.state.animLockUntil = this.state.nowMs + lock
+    this.state.lastCastSkillId = skill.id
 
     if (skill.castMs > 0) {
       this.state.castUntil = this.state.nowMs + skill.castMs
