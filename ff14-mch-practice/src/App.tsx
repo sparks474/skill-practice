@@ -7,16 +7,19 @@ import { RotationEditor } from './components/RotationEditor'
 import {
   createEmptyRotation,
   loadConfig,
+  loadHotbarLayout,
   loadKeybinds,
   loadMovementKeys,
   loadRotations,
   saveConfig,
+  saveHotbarLayout,
   saveKeybinds,
   saveMovementKeys,
   saveRotations,
 } from './storage'
 import type {
   EngineConfig,
+  HotbarLayout,
   Keybinds,
   MovementKeys,
   PracticeSummary,
@@ -41,6 +44,9 @@ function App() {
   const [config, setConfig] = useState<EngineConfig>(() => loadConfig())
   const [movementKeys, setMovementKeys] = useState<MovementKeys>(() =>
     loadMovementKeys(),
+  )
+  const [hotbarLayout, setHotbarLayout] = useState<HotbarLayout>(() =>
+    loadHotbarLayout(),
   )
   const [screen, setScreen] = useState<Screen>({ name: 'home' })
 
@@ -79,14 +85,17 @@ function App() {
         keybinds={keybinds}
         config={config}
         movementKeys={movementKeys}
+        hotbarLayout={hotbarLayout}
         onCancel={goHome}
-        onSave={(binds, cfg, move) => {
+        onSave={(binds, cfg, move, hotbar) => {
           setKeybinds(binds)
           setConfig(cfg)
           setMovementKeys(move)
+          setHotbarLayout(hotbar)
           saveKeybinds(binds)
           saveConfig(cfg)
           saveMovementKeys(move)
+          saveHotbarLayout(hotbar)
           setScreen({ name: 'home' })
         }}
       />
@@ -101,6 +110,7 @@ function App() {
         rotation={rot}
         keybinds={keybinds}
         movementKeys={movementKeys}
+        hotbarLayout={hotbarLayout}
         config={config}
         onAbort={goHome}
         onFinish={(summary) =>

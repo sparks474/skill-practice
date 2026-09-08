@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import { HotbarLayoutEditor } from './HotbarLayoutEditor'
+import { normalizeHotbarLayout } from '../data/hotbarLayout'
 import { SKILLS } from '../data/skills'
 import {
   assignKey,
@@ -9,6 +11,7 @@ import {
 import { formatKeyLabel } from '../input/keys'
 import type {
   EngineConfig,
+  HotbarLayout,
   Keybinds,
   MovementDirection,
   MovementKeys,
@@ -18,10 +21,12 @@ type Props = {
   keybinds: Keybinds
   config: EngineConfig
   movementKeys: MovementKeys
+  hotbarLayout: HotbarLayout
   onSave: (
     keybinds: Keybinds,
     config: EngineConfig,
     movementKeys: MovementKeys,
+    hotbarLayout: HotbarLayout,
   ) => void
   onCancel: () => void
 }
@@ -68,6 +73,7 @@ export function KeybindSettings({
   keybinds,
   config,
   movementKeys,
+  hotbarLayout,
   onSave,
   onCancel,
 }: Props) {
@@ -78,6 +84,9 @@ export function KeybindSettings({
   const [draftMove, setDraftMove] = useState<MovementKeys>(() => ({
     ...movementKeys,
   }))
+  const [draftHotbar, setDraftHotbar] = useState<HotbarLayout>(() =>
+    normalizeHotbarLayout(hotbarLayout, keybinds),
+  )
   const [listening, setListening] = useState<ListenTarget | null>(null)
 
   useEffect(() => {
@@ -137,7 +146,7 @@ export function KeybindSettings({
           <button
             type="button"
             className="btn primary"
-            onClick={() => onSave(draftBinds, draftConfig, draftMove)}
+            onClick={() => onSave(draftBinds, draftConfig, draftMove, draftHotbar)}
           >
             保存
           </button>
@@ -237,6 +246,12 @@ export function KeybindSettings({
         </ul>
       </section>
 
+      <HotbarLayoutEditor
+        layout={draftHotbar}
+        keybinds={draftBinds}
+        onChange={setDraftHotbar}
+      />
+
       <section>
         <h2>キー割り当て</h2>
         <p className="muted">
@@ -333,15 +348,18 @@ export function KeybindSettings({
                   <input
                     type="checkbox"
                     checked={unused}
-                    onChange={(e) =>
-                      setDraftBinds((prev) => ({
-                        ...prev,
+                    onChange={(e) => {
+                      const nextUnused = e.target.checked
+                      const next = {
+                        ...draftBinds,
                         [skill.id]: {
-                          ...prev[skill.id],
-                          unused: e.target.checked,
+                          ...draftBinds[skill.id],
+                          unused: nextUnused,
                         },
-                      }))
-                    }
+                      }
+                      setDraftBinds(next)
+                      setDraftHotbar((hb) => normalizeHotbarLayout(hb, next))
+                    }}
                   />
                   不要
                 </label>

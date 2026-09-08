@@ -1,9 +1,11 @@
 import { createDefaultKeybinds } from './data/defaultKeybinds'
+import { createDefaultHotbarLayout, normalizeHotbarLayout } from './data/hotbarLayout'
 import { SAMPLE_ROTATION } from './data/sampleRotation'
 import {
   DEFAULT_ENGINE_CONFIG,
   DEFAULT_MOVEMENT_KEYS,
   type EngineConfig,
+  type HotbarLayout,
   type Keybinds,
   type MovementKeys,
   type Rotation,
@@ -13,6 +15,7 @@ const ROTATIONS_KEY = 'ff14-mch-rotations'
 const KEYBINDS_KEY = 'ff14-mch-keybinds'
 const CONFIG_KEY = 'ff14-mch-config'
 const MOVEMENT_KEY = 'ff14-mch-movement'
+const HOTBAR_KEY = 'ff14-mch-hotbar'
 
 function canUseStorage(): boolean {
   return typeof localStorage !== 'undefined'
@@ -122,6 +125,36 @@ export function loadMovementKeys(): MovementKeys {
 export function saveMovementKeys(keys: MovementKeys): void {
   if (!canUseStorage()) return
   localStorage.setItem(MOVEMENT_KEY, JSON.stringify(keys))
+}
+
+export function loadHotbarLayout(keybinds?: Keybinds): HotbarLayout {
+  const binds = keybinds ?? (canUseStorage() ? loadKeybinds() : createDefaultKeybinds())
+  if (!canUseStorage()) return createDefaultHotbarLayout()
+  try {
+    const raw = localStorage.getItem(HOTBAR_KEY)
+    if (!raw) {
+      const defaults = createDefaultHotbarLayout()
+      saveHotbarLayout(defaults)
+      return defaults
+    }
+    const parsed = JSON.parse(raw) as HotbarLayout
+    if (
+      !parsed ||
+      typeof parsed.cols !== 'number' ||
+      typeof parsed.rows !== 'number' ||
+      !Array.isArray(parsed.slots)
+    ) {
+      return createDefaultHotbarLayout()
+    }
+    return normalizeHotbarLayout(parsed, binds)
+  } catch {
+    return createDefaultHotbarLayout()
+  }
+}
+
+export function saveHotbarLayout(layout: HotbarLayout): void {
+  if (!canUseStorage()) return
+  localStorage.setItem(HOTBAR_KEY, JSON.stringify(layout))
 }
 
 export function cloneSample(): Rotation {
