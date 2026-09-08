@@ -298,6 +298,9 @@ export function PracticeView({
         <div className="status-pills">
           <span>OH×{snap.overheatStacks}</span>
           <span>{snap.hasFullMetal ? 'フルメタル準備' : 'FMなし'}</span>
+          <span>
+            {snap.hasHyperchargeReady ? 'HC実行可' : 'HC通常'}
+          </span>
         </div>
       </section>
 
