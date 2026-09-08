@@ -1,14 +1,15 @@
 import { useMemo, useState } from 'react'
 import { SKILLS } from '../data/skills'
-import type { Rotation, SkillCategory } from '../types'
+import type { Keybinds, Rotation, SkillCategory } from '../types'
 
 type Props = {
   rotation: Rotation
+  keybinds: Keybinds
   onSave: (rotation: Rotation) => void
   onCancel: () => void
 }
 
-export function RotationEditor({ rotation, onSave, onCancel }: Props) {
+export function RotationEditor({ rotation, keybinds, onSave, onCancel }: Props) {
   const [draft, setDraft] = useState<Rotation>(() => ({
     ...rotation,
     initialGauges: { ...rotation.initialGauges },
@@ -19,11 +20,12 @@ export function RotationEditor({ rotation, onSave, onCancel }: Props) {
 
   const filteredSkills = useMemo(() => {
     return SKILLS.filter((s) => {
+      if (keybinds[s.id]?.unused) return false
       if (filter !== 'all' && s.category !== filter) return false
       if (query && !s.nameJa.includes(query)) return false
       return true
     })
-  }, [filter, query])
+  }, [filter, query, keybinds])
 
   function updateStep(index: number, skillId: string) {
     setDraft((d) => {
@@ -162,9 +164,14 @@ export function RotationEditor({ rotation, onSave, onCancel }: Props) {
                     value={step.skillId}
                     onChange={(e) => updateStep(i, e.target.value)}
                   >
-                    {SKILLS.map((s) => (
+                    {/* 既に手順にある不要スキルは表示を残す */}
+                    {SKILLS.filter(
+                      (s) =>
+                        !keybinds[s.id]?.unused || s.id === step.skillId,
+                    ).map((s) => (
                       <option key={s.id} value={s.id}>
                         {s.nameJa}（{s.category === 'skill' ? 'スキル' : 'アビ'}）
+                        {keybinds[s.id]?.unused ? '・不要' : ''}
                       </option>
                     ))}
                   </select>
