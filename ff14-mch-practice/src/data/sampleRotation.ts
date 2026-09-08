@@ -1,0 +1,39 @@
+import type { Rotation } from '../types'
+
+/** 機工 開幕（サンプル）— 練習用近似 */
+export const SAMPLE_ROTATION: Rotation = {
+  id: 'sample-mch-opener',
+  name: '機工 開幕（サンプル）',
+  gcdMs: 2500,
+  // 開幕練習用にヒート満タン開始（実戦の持ち越し想定）
+  initialGauges: { heat: 100, battery: 0 },
+  isSample: true,
+  note: 'パッチやガイドにより最適開幕は変わります。練習用の近似手順です。ヒートは持ち越し想定で100開始。',
+  updatedAt: Date.UTC(2026, 8, 7),
+  steps: [
+    { skillId: 'reassemble' },
+    { skillId: 'air_anchor' },
+    { skillId: 'double_check' },
+    { skillId: 'drill' },
+    { skillId: 'checkmate' },
+    { skillId: 'chain_saw' },
+    { skillId: 'double_check' },
+    { skillId: 'excavator' },
+    { skillId: 'automaton_queen' },
+    { skillId: 'checkmate' },
+    { skillId: 'barrel_stabilizer' },
+    { skillId: 'wildfire' },
+    { skillId: 'full_metal_burst' },
+    { skillId: 'hypercharge' },
+    { skillId: 'blazing_shot' },
+    { skillId: 'double_check' },
+    { skillId: 'blazing_shot' },
+    { skillId: 'checkmate' },
+    { skillId: 'blazing_shot' },
+    { skillId: 'double_check' },
+    { skillId: 'blazing_shot' },
+    { skillId: 'checkmate' },
+    { skillId: 'blazing_shot' },
+    { skillId: 'drill' },
+  ],
+}
