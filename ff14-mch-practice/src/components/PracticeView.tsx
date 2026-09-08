@@ -58,6 +58,7 @@ export function PracticeView({
 }: Props) {
   const runtimeRef = useRef<PracticeRuntime | null>(null)
   const startWallRef = useRef<number>(0)
+  const clockStartedRef = useRef(false)
   const onFinishRef = useRef(onFinish)
   onFinishRef.current = onFinish
   const swapActiveRef = useRef<Record<string, string>>(
@@ -65,6 +66,7 @@ export function PracticeView({
   )
   const [snap, setSnap] = useState<RuntimeSnapshot | null>(null)
   const [running, setRunning] = useState(false)
+  const [clockStarted, setClockStarted] = useState(false)
   const [swapActive, setSwapActive] = useState<Record<string, string>>(() =>
     createInitialSwapActive(keybinds),
   )
@@ -104,6 +106,12 @@ export function PracticeView({
   function applyInput(skillId: string) {
     const rt = runtimeRef.current
     if (!rt || !running) return
+    // 1手目の入力でタイマー開始（ページ表示時点では回さない）
+    if (!clockStartedRef.current) {
+      clockStartedRef.current = true
+      startWallRef.current = performance.now()
+      setClockStarted(true)
+    }
     const elapsed = performance.now() - startWallRef.current
     rt.advanceTo(elapsed)
     rt.handleInput(skillId)
@@ -114,7 +122,9 @@ export function PracticeView({
 
   function start() {
     runtimeRef.current = new PracticeRuntime(rotation, config)
-    startWallRef.current = performance.now()
+    clockStartedRef.current = false
+    startWallRef.current = 0
+    setClockStarted(false)
     const initial = createInitialSwapActive(keybinds)
     swapActiveRef.current = initial
     setSwapActive(initial)
@@ -133,8 +143,10 @@ export function PracticeView({
     const loop = () => {
       const rt = runtimeRef.current
       if (!rt) return
-      const elapsed = performance.now() - startWallRef.current
-      rt.advanceTo(elapsed)
+      if (clockStartedRef.current) {
+        const elapsed = performance.now() - startWallRef.current
+        rt.advanceTo(elapsed)
+      }
       const s = rt.getSnapshot()
       syncSwapFromSnapshot(s)
       setSnap(s)
@@ -218,7 +230,9 @@ export function PracticeView({
           <h1>{rotation.name}</h1>
           <p className="lead">
             {snap.stepIndex + 1} / {rotation.steps.length} ·{' '}
-            {(snap.nowMs / 1000).toFixed(1)}s
+            {clockStarted
+              ? `${(snap.nowMs / 1000).toFixed(1)}s`
+              : '開始待ち（1手目でスタート）'}
           </p>
         </div>
         <div className="header-actions">
