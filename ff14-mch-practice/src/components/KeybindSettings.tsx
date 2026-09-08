@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { SKILLS } from '../data/skills'
+import {
+  assignKey,
+  effectiveKey,
+  getSwapPartner,
+  setSwapPartner,
+} from '../data/skillSlots'
 import { formatKeyLabel } from '../input/keys'
 import type { EngineConfig, Keybinds } from '../types'
 
@@ -11,7 +17,9 @@ type Props = {
 }
 
 export function KeybindSettings({ keybinds, config, onSave, onCancel }: Props) {
-  const [draftBinds, setDraftBinds] = useState<Keybinds>(() => ({ ...keybinds }))
+  const [draftBinds, setDraftBinds] = useState<Keybinds>(() =>
+    structuredClone(keybinds),
+  )
   const [draftConfig, setDraftConfig] = useState<EngineConfig>({ ...config })
   const [listeningId, setListeningId] = useState<string | null>(null)
 
@@ -19,33 +27,33 @@ export function KeybindSettings({ keybinds, config, onSave, onCancel }: Props) {
     if (!listeningId) return
     const onKey = (e: KeyboardEvent) => {
       e.preventDefault()
-      const key = e.key === ' ' ? 'space' : e.key.length === 1 ? e.key.toLowerCase() : e.key.toLowerCase()
+      const key =
+        e.key === ' '
+          ? 'space'
+          : e.key.length === 1
+            ? e.key.toLowerCase()
+            : e.key.toLowerCase()
       if (key === 'escape') {
         setListeningId(null)
         return
       }
-      setDraftBinds((prev) => {
-        const next = { ...prev }
-        // 同じキーを他スキルから外す
-        for (const id of Object.keys(next)) {
-          if (next[id]?.key === key) {
-            next[id] = { ...next[id], key: undefined }
-          }
-        }
-        next[listeningId] = {
-          ...next[listeningId],
-          key,
-          mouse: next[listeningId]?.mouse ?? false,
-        }
-        return next
-      })
+      setDraftBinds((prev) => assignKey(prev, listeningId, key))
       setListeningId(null)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [listeningId])
 
-  const rows = useMemo(() => SKILLS, [])
+  const rows = useMemo(() => {
+    const list = [...SKILLS]
+    list.sort((a, b) => {
+      const au = draftBinds[a.id]?.unused ? 1 : 0
+      const bu = draftBinds[b.id]?.unused ? 1 : 0
+      if (au !== bu) return au - bu
+      return 0
+    })
+    return list
+  }, [draftBinds])
 
   return (
     <div className="page">
@@ -53,7 +61,7 @@ export function KeybindSettings({ keybinds, config, onSave, onCancel }: Props) {
         <div>
           <p className="brand">MCH Practice</p>
           <h1>キー設定</h1>
-          <p className="lead">キー割り当てとエンジン定数</p>
+          <p className="lead">キー割り当て・置き換え・不要スキル</p>
         </div>
         <div className="header-actions">
           <button type="button" className="btn ghost" onClick={onCancel}>
@@ -127,21 +135,29 @@ export function KeybindSettings({ keybinds, config, onSave, onCancel }: Props) {
       <section>
         <h2>キー割り当て</h2>
         <p className="muted">
-          「変更」を押してからキーを押してください。Esc でキャンセル。クリック専用にするとホットバーからのみ入力できます。
+          「変更」でキー割り当て。置き換えを設定すると同じキー枠でトグルします（例:
+          回転のこぎり ↔ エクスカベーター）。不要にチェックするとグレーアウトして末尾へ移動し、練習ホットバーから外れます。
         </p>
         <ul className="keybind-list">
           {rows.map((skill) => {
             const bind = draftBinds[skill.id] ?? {}
+            const unused = Boolean(bind.unused)
+            const partnerId = getSwapPartner(draftBinds, skill.id)
+            const keyLabel = formatKeyLabel(effectiveKey(draftBinds, skill.id))
             return (
-              <li key={skill.id}>
+              <li
+                key={skill.id}
+                className={unused ? 'keybind-row unused' : 'keybind-row'}
+              >
                 <span className="keybind-name">{skill.nameJa}</span>
                 <span className="muted">
                   {skill.category === 'skill' ? 'スキル' : 'アビ'}
                 </span>
-                <span className="key-badge">{formatKeyLabel(bind.key)}</span>
+                <span className="key-badge">{keyLabel}</span>
                 <button
                   type="button"
                   className="btn ghost"
+                  disabled={unused}
                   onClick={() => setListeningId(skill.id)}
                 >
                   {listeningId === skill.id ? '入力待ち…' : '変更'}
@@ -149,11 +165,9 @@ export function KeybindSettings({ keybinds, config, onSave, onCancel }: Props) {
                 <button
                   type="button"
                   className="btn ghost"
+                  disabled={unused}
                   onClick={() =>
-                    setDraftBinds((prev) => ({
-                      ...prev,
-                      [skill.id]: { ...prev[skill.id], key: undefined },
-                    }))
+                    setDraftBinds((prev) => assignKey(prev, skill.id, undefined))
                   }
                 >
                   クリア
@@ -161,18 +175,63 @@ export function KeybindSettings({ keybinds, config, onSave, onCancel }: Props) {
                 <label className="check">
                   <input
                     type="checkbox"
-                    checked={Boolean(bind.mouse) || !bind.key}
+                    checked={Boolean(bind.mouse) || !effectiveKey(draftBinds, skill.id)}
+                    disabled={unused}
+                    onChange={(e) =>
+                      setDraftBinds((prev) => {
+                        const next = { ...prev }
+                        const partner = getSwapPartner(prev, skill.id)
+                        next[skill.id] = {
+                          ...next[skill.id],
+                          mouse: e.target.checked,
+                        }
+                        if (partner) {
+                          next[partner] = {
+                            ...next[partner],
+                            mouse: e.target.checked,
+                          }
+                        }
+                        return next
+                      })
+                    }
+                  />
+                  クリック可
+                </label>
+                <label className="check swap-select">
+                  置き換え
+                  <select
+                    disabled={unused}
+                    value={partnerId ?? ''}
+                    onChange={(e) => {
+                      const value = e.target.value || undefined
+                      setDraftBinds((prev) =>
+                        setSwapPartner(prev, skill.id, value),
+                      )
+                    }}
+                  >
+                    <option value="">なし</option>
+                    {SKILLS.filter((s) => s.id !== skill.id).map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.nameJa}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={unused}
                     onChange={(e) =>
                       setDraftBinds((prev) => ({
                         ...prev,
                         [skill.id]: {
                           ...prev[skill.id],
-                          mouse: e.target.checked,
+                          unused: e.target.checked,
                         },
                       }))
                     }
                   />
-                  クリック可
+                  不要
                 </label>
               </li>
             )

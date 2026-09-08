@@ -54,7 +54,23 @@ export function loadKeybinds(): Keybinds {
       saveKeybinds(defaults)
       return defaults
     }
-    return { ...createDefaultKeybinds(), ...(JSON.parse(raw) as Keybinds) }
+    const defaults = createDefaultKeybinds()
+    const saved = JSON.parse(raw) as Keybinds
+    const merged: Keybinds = { ...defaults }
+    for (const [id, bind] of Object.entries(saved)) {
+      merged[id] = { ...defaults[id], ...bind }
+    }
+    // 置き換えペアのキーを揃える
+    for (const [id, bind] of Object.entries(merged)) {
+      const partner = bind.swapWith
+      if (!partner || !merged[partner]) continue
+      if (merged[partner].swapWith !== id) continue
+      if (id > partner) continue
+      const shared = bind.key ?? merged[partner].key
+      merged[id] = { ...merged[id], key: shared }
+      merged[partner] = { ...merged[partner], key: shared }
+    }
+    return merged
   } catch {
     return createDefaultKeybinds()
   }

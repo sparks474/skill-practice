@@ -53,6 +53,10 @@ export type EngineConfig = {
 export type KeybindEntry = {
   key?: string
   mouse?: boolean
+  /** キー設定で不要扱い（グレーアウト・末尾・練習ホットバー非表示） */
+  unused?: boolean
+  /** 同じキー枠でトグル置き換えする相手スキル ID */
+  swapWith?: string
 }
 
 export type Keybinds = Record<string, KeybindEntry>
