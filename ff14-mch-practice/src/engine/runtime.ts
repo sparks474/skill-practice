@@ -1,4 +1,4 @@
-import { getSkill } from '../data/skills'
+import { getSkill, SKILLS } from '../data/skills'
 import type {
   EngineConfig,
   Gauges,
@@ -17,6 +17,13 @@ export type ChargeState = {
   readyAt: number
 }
 
+export type SkillCooldownView = {
+  /** 自身リキャスト／次チャージまでの残り ms（GCD・硬直は含まない） */
+  remainingMs: number
+  charges?: number
+  maxCharges?: number
+}
+
 export type RuntimeSnapshot = {
   nowMs: number
   stepIndex: number
@@ -30,6 +37,7 @@ export type RuntimeSnapshot = {
   queuedSkillId: string | null
   lastFeedback: string | null
   events: ScoreEvent[]
+  cooldowns: Record<string, SkillCooldownView>
 }
 
 type InternalState = {
@@ -100,6 +108,7 @@ export class PracticeRuntime {
   }
 
   getSnapshot(): RuntimeSnapshot {
+    this.refreshCharges(this.state.nowMs)
     return {
       nowMs: this.state.nowMs,
       stepIndex: this.state.stepIndex,
@@ -113,7 +122,37 @@ export class PracticeRuntime {
       queuedSkillId: this.state.queued?.skillId ?? null,
       lastFeedback: this.state.lastFeedback,
       events: [...this.state.events],
+      cooldowns: this.buildCooldowns(),
     }
+  }
+
+  private buildCooldowns(): Record<string, SkillCooldownView> {
+    const out: Record<string, SkillCooldownView> = {}
+    for (const skill of SKILLS) {
+      if (skill.charges == null && skill.recastMs <= 0) continue
+      out[skill.id] = this.cooldownFromState(skill, this.getChargeState(skill))
+    }
+    return out
+  }
+
+  private cooldownFromState(skill: Skill, cs: ChargeState): SkillCooldownView {
+    if (skill.charges != null) {
+      const remainingMs =
+        cs.nextChargeAt != null
+          ? Math.max(0, cs.nextChargeAt - this.state.nowMs)
+          : 0
+      return {
+        remainingMs,
+        charges: cs.charges,
+        maxCharges: skill.charges,
+      }
+    }
+    if (skill.recastMs > 0) {
+      return {
+        remainingMs: Math.max(0, cs.readyAt - this.state.nowMs),
+      }
+    }
+    return { remainingMs: 0 }
   }
 
   getSummary(): PracticeSummary {

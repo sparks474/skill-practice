@@ -198,20 +198,30 @@ export function PracticeView({
 
   if (!snap) return null
 
-  const expectedId = rotation.steps[snap.stepIndex]?.skillId
+  const view = snap
+  const expectedId = rotation.steps[view.stepIndex]?.skillId
   const expected = expectedId ? getSkill(expectedId) : null
   const upcoming = rotation.steps
-    .slice(snap.stepIndex + 1, snap.stepIndex + 5)
+    .slice(view.stepIndex + 1, view.stepIndex + 5)
     .map((s) => getSkill(s.skillId)?.nameJa ?? s.skillId)
 
   const gcdTotal = rotation.gcdMs
-  const gcdLeft = Math.max(0, snap.gcdReadyAt - snap.nowMs)
-  const animLeft = Math.max(0, snap.animLockUntil - snap.nowMs)
+  const gcdLeft = Math.max(0, view.gcdReadyAt - view.nowMs)
   const gcdPct = gcdTotal <= 0 ? 0 : Math.min(100, (gcdLeft / gcdTotal) * 100)
-  const animPct = Math.min(
-    100,
-    (animLeft / Math.max(1, config.defaultAnimationLockMs)) * 100,
-  )
+
+  function formatCooldown(skillId: string): string {
+    const skill = getSkill(skillId)
+    if (!skill) return '—'
+    if (skill.charges == null && skill.recastMs <= 0) return '—'
+    const cd = view.cooldowns[skillId] ?? { remainingMs: 0 }
+    if (skill.charges != null && cd.maxCharges != null && cd.charges != null) {
+      const chargeText = `${cd.charges}/${cd.maxCharges}`
+      if (cd.charges >= cd.maxCharges || cd.remainingMs <= 0) return chargeText
+      return `${chargeText} · ${(cd.remainingMs / 1000).toFixed(1)}s`
+    }
+    if (cd.remainingMs <= 0) return 'Ready'
+    return `${(cd.remainingMs / 1000).toFixed(1)}s`
+  }
 
   return (
     <div className="page practice">
@@ -301,26 +311,21 @@ export function PracticeView({
             <div className="gauge-fill gcd" style={{ width: `${gcdPct}%` }} />
           </div>
         </div>
-        <div className="timer">
-          <div className="gauge-label">
-            <span>硬直</span>
-            <span>{(animLeft / 1000).toFixed(2)}s</span>
-          </div>
-          <div className="gauge-track">
-            <div className="gauge-fill anim" style={{ width: `${animPct}%` }} />
-          </div>
-        </div>
       </section>
 
       <section className="hotbar" aria-label="ホットバー">
         {hotbar.map((skill) => {
           const partner = getSwapPartner(keybinds, skill.id)
           const isNext = skill.id === expectedId
+          const cd = snap.cooldowns[skill.id]
+          const onCd =
+            (cd?.remainingMs ?? 0) > 0 &&
+            (skill.charges == null || (cd?.charges ?? 0) <= 0)
           return (
             <button
               key={partner ? slotIdFor(skill.id, partner) : skill.id}
               type="button"
-              className={`hotbar-btn ${isNext ? 'next' : ''} ${partner ? 'swappable' : ''}`}
+              className={`hotbar-btn ${isNext ? 'next' : ''} ${partner ? 'swappable' : ''} ${onCd ? 'on-cd' : ''}`}
               onClick={() => clickSkill(skill.id)}
             >
               <span className="hotbar-name">{skill.nameJa}</span>
@@ -328,6 +333,7 @@ export function PracticeView({
                 {formatKeyLabel(effectiveKey(keybinds, skill.id))}
                 {partner ? ` ↔ ${getSkill(partner)?.nameJa ?? ''}` : ''}
               </span>
+              <span className="hotbar-cd">{formatCooldown(skill.id)}</span>
             </button>
           )
         })}
