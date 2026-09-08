@@ -38,6 +38,10 @@ type InternalState = {
   overheatStacks: number
   hasFullMetal: boolean
   hasHyperchargeReady: boolean
+  hasHawksEye: boolean
+  hasBlastArrow: boolean
+  hasResonanceArrow: boolean
+  hasRadiantEncore: boolean
   gcdReadyAt: number
   animLockUntil: number
   castUntil: number
@@ -86,6 +90,10 @@ export class FreePracticeRuntime {
       overheatStacks: 0,
       hasFullMetal: false,
       hasHyperchargeReady: false,
+      hasHawksEye: false,
+      hasBlastArrow: false,
+      hasResonanceArrow: false,
+      hasRadiantEncore: false,
       gcdReadyAt: 0,
       animLockUntil: 0,
       castUntil: 0,
@@ -149,6 +157,10 @@ export class FreePracticeRuntime {
       overheatStacks: this.state.overheatStacks,
       hasFullMetal: this.state.hasFullMetal,
       hasHyperchargeReady: this.state.hasHyperchargeReady,
+      hasHawksEye: this.state.hasHawksEye,
+      hasBlastArrow: this.state.hasBlastArrow,
+      hasResonanceArrow: this.state.hasResonanceArrow,
+      hasRadiantEncore: this.state.hasRadiantEncore,
       gcdReadyAt: this.state.gcdReadyAt,
       animLockUntil: this.state.animLockUntil,
       castUntil: this.state.castUntil,
@@ -411,6 +423,18 @@ export class FreePracticeRuntime {
     if (skill.requiresFullMetal && !this.state.hasFullMetal) {
       return 'フルメタル準備が必要'
     }
+    if (skill.requiresHawksEye && !this.state.hasHawksEye) {
+      return 'ホークアイが必要'
+    }
+    if (skill.requiresBlastArrow && !this.state.hasBlastArrow) {
+      return 'ブラストアロー実行可が必要'
+    }
+    if (skill.requiresResonanceArrow && !this.state.hasResonanceArrow) {
+      return 'レゾナンスアロー実行可が必要'
+    }
+    if (skill.requiresRadiantEncore && !this.state.hasRadiantEncore) {
+      return '光神のアンコール実行可が必要'
+    }
 
     const req = skill.gauge?.require
     const freeHypercharge =
@@ -419,7 +443,7 @@ export class FreePracticeRuntime {
       return 'ヒート不足'
     }
     if (req?.battery != null && this.state.gauges.battery < req.battery) {
-      return 'バッテリー不足'
+      return this.rotation.jobId === 'BRD' ? 'ソウルボイス不足' : 'バッテリー不足'
     }
 
     return null
@@ -455,6 +479,7 @@ export class FreePracticeRuntime {
       cs.readyAt = this.state.nowMs + skill.recastMs
     }
 
+    const batteryBefore = this.state.gauges.battery
     const freeHypercharge =
       skill.id === 'hypercharge' && this.state.hasHyperchargeReady
     if (freeHypercharge) {
@@ -489,6 +514,34 @@ export class FreePracticeRuntime {
     }
     if (skill.grantsHyperchargeReady) {
       this.state.hasHyperchargeReady = true
+    }
+
+    if (skill.grantsHawksEye) {
+      this.state.hasHawksEye = true
+    }
+    if (skill.requiresHawksEye) {
+      this.state.hasHawksEye = false
+    }
+    if (skill.grantsBlastArrow) {
+      const min = skill.grantsBlastArrowMinBattery
+      if (min == null || batteryBefore >= min) {
+        this.state.hasBlastArrow = true
+      }
+    }
+    if (skill.requiresBlastArrow) {
+      this.state.hasBlastArrow = false
+    }
+    if (skill.grantsResonanceArrow) {
+      this.state.hasResonanceArrow = true
+    }
+    if (skill.requiresResonanceArrow) {
+      this.state.hasResonanceArrow = false
+    }
+    if (skill.grantsRadiantEncore) {
+      this.state.hasRadiantEncore = true
+    }
+    if (skill.requiresRadiantEncore) {
+      this.state.hasRadiantEncore = false
     }
 
     if (skill.reduceRecast) {

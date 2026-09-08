@@ -4,6 +4,7 @@ import type { Keybinds } from '../types'
 export const DEFAULT_SWAP_PAIRS: readonly [string, string][] = [
   ['chain_saw', 'excavator'],
   ['barrel_stabilizer', 'full_metal_burst'],
+  ['apex_arrow', 'blast_arrow'],
 ]
 
 export function slotIdFor(a: string, b: string): string {

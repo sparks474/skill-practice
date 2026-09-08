@@ -36,6 +36,25 @@ export type Skill = {
   grantsFullMetal?: boolean
   /** バレルヒーター等: ヒート消費なしでハイパーチャージ可能 */
   grantsHyperchargeReady?: boolean
+  /** BRD: ホークアイ（または乱れ撃ち）実行可が必要 */
+  requiresHawksEye?: boolean
+  /** BRD: ホークアイを付与（乱れ撃ち／練習用近似） */
+  grantsHawksEye?: boolean
+  /** BRD: ブラストアロー実行可が必要 */
+  requiresBlastArrow?: boolean
+  /** BRD: ブラストアロー実行可を付与（エイペックスで SV80+ 時など） */
+  grantsBlastArrow?: boolean
+  /**
+   * grantsBlastArrow を発動するのに必要なバッテリー（詩人＝ソウルボイス）下限。
+   * 未指定なら常に付与。
+   */
+  grantsBlastArrowMinBattery?: number
+  /** BRD: レゾナンスアロー実行可が必要 */
+  requiresResonanceArrow?: boolean
+  grantsResonanceArrow?: boolean
+  /** BRD: 光神のアンコール実行可が必要 */
+  requiresRadiantEncore?: boolean
+  grantsRadiantEncore?: boolean
   /** ドリル／バイオなどリキャスト共有グループ */
   sharedRecastGroup?: string
   reduceRecast?: { skillIds: string[]; amountMs: number }

@@ -20,9 +20,36 @@ const MCH_PRESET: Keybinds = {
   automaton_queen: { key: 'x' },
 }
 
+/** 吟遊詩人向けの初期キー配置 */
+const BRD_PRESET: Keybinds = {
+  burst_shot: { key: '1' },
+  caustic_bite: { key: '2' },
+  stormbite: { key: '3' },
+  iron_jaws: { key: '4' },
+  apex_arrow: { key: '5' },
+  resonance_arrow: { key: '6' },
+  radiant_encore: { key: '7' },
+  refulgent_arrow: { key: 'f' },
+  heartbreak_shot: { key: 'e' },
+  empyreal_arrow: { key: 't' },
+  sidewinder: { key: 'g' },
+  pitch_perfect: { key: 'r' },
+  the_wanderers_minuet: { key: 'q' },
+  mages_ballad: { key: '8' },
+  armys_paeon: { key: '9' },
+  barrage: { key: 'c' },
+  raging_strikes: { key: 'v' },
+  battle_voice: { key: 'b' },
+  radiant_finale: { key: 'x' },
+  potion: { key: 'z' },
+}
+
 const PRESETS: Partial<Record<JobId, Keybinds>> = {
   MCH: MCH_PRESET,
+  BRD: BRD_PRESET,
 }
+
+const SWAP_JOBS: JobId[] = ['MCH', 'BRD']
 
 export function createDefaultKeybinds(jobId: JobId = 'MCH'): Keybinds {
   const skills = getSkillsForJob(jobId)
@@ -34,7 +61,7 @@ export function createDefaultKeybinds(jobId: JobId = 'MCH'): Keybinds {
       : { mouse: true }
   }
 
-  if (jobId === 'MCH') {
+  if (SWAP_JOBS.includes(jobId)) {
     for (const [a, b] of DEFAULT_SWAP_PAIRS) {
       if (!binds[a] || !binds[b]) continue
       const sharedKey = binds[a]?.key ?? binds[b]?.key

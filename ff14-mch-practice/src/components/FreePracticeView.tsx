@@ -302,9 +302,20 @@ export function FreePracticeView({
             <p className="next-skill">自由に回す</p>
             <p className="upcoming">
               発動 {view.events.filter((e) => e.type === 'cast').length} · 空き{' '}
-              {Math.round(view.idleWasteMs)}ms · 溢れ ヒート
-              {view.heatOverflow} / バッテリー
-              {view.batteryOverflow}
+              {Math.round(view.idleWasteMs)}ms
+              {jobId === 'BRD' ? (
+                <>
+                  {' '}
+                  · SV溢れ {view.batteryOverflow}
+                </>
+              ) : (
+                <>
+                  {' '}
+                  · 溢れ ヒート
+                  {view.heatOverflow} / バッテリー
+                  {view.batteryOverflow}
+                </>
+              )}
             </p>
             {view.queuedSkillId ? (
               <p className="queue">
@@ -325,37 +336,71 @@ export function FreePracticeView({
       {view ? (
         <>
           <section className="gauges" aria-label="ゲージ">
-            <div className="gauge">
-              <div className="gauge-label">
-                <span>ヒート</span>
-                <span>{view.gauges.heat}</span>
-              </div>
-              <div className="gauge-track">
-                <div
-                  className="gauge-fill heat"
-                  style={{ width: `${view.gauges.heat}%` }}
-                />
-              </div>
-            </div>
-            <div className="gauge">
-              <div className="gauge-label">
-                <span>バッテリー</span>
-                <span>{view.gauges.battery}</span>
-              </div>
-              <div className="gauge-track">
-                <div
-                  className="gauge-fill battery"
-                  style={{ width: `${view.gauges.battery}%` }}
-                />
-              </div>
-            </div>
-            <div className="status-pills">
-              <span>OH×{view.overheatStacks}</span>
-              <span>{view.hasFullMetal ? 'フルメタル準備' : 'FMなし'}</span>
-              <span>
-                {view.hasHyperchargeReady ? 'HC実行可' : 'HC通常'}
-              </span>
-            </div>
+            {jobId === 'MCH' ? (
+              <>
+                <div className="gauge">
+                  <div className="gauge-label">
+                    <span>ヒート</span>
+                    <span>{view.gauges.heat}</span>
+                  </div>
+                  <div className="gauge-track">
+                    <div
+                      className="gauge-fill heat"
+                      style={{ width: `${view.gauges.heat}%` }}
+                    />
+                  </div>
+                </div>
+                <div className="gauge">
+                  <div className="gauge-label">
+                    <span>バッテリー</span>
+                    <span>{view.gauges.battery}</span>
+                  </div>
+                  <div className="gauge-track">
+                    <div
+                      className="gauge-fill battery"
+                      style={{ width: `${view.gauges.battery}%` }}
+                    />
+                  </div>
+                </div>
+                <div className="status-pills">
+                  <span>OH×{view.overheatStacks}</span>
+                  <span>{view.hasFullMetal ? 'フルメタル準備' : 'FMなし'}</span>
+                  <span>
+                    {view.hasHyperchargeReady ? 'HC実行可' : 'HC通常'}
+                  </span>
+                </div>
+              </>
+            ) : null}
+            {jobId === 'BRD' ? (
+              <>
+                <div className="gauge">
+                  <div className="gauge-label">
+                    <span>ソウルボイス</span>
+                    <span>{view.gauges.battery}</span>
+                  </div>
+                  <div className="gauge-track">
+                    <div
+                      className="gauge-fill battery"
+                      style={{ width: `${view.gauges.battery}%` }}
+                    />
+                  </div>
+                </div>
+                <div className="status-pills">
+                  <span>{view.hasHawksEye ? 'ホークアイ' : 'HEなし'}</span>
+                  <span>
+                    {view.hasBlastArrow ? 'ブラスト実行可' : 'ブラストなし'}
+                  </span>
+                  <span>
+                    {view.hasResonanceArrow ? 'レゾナンス実行可' : 'レゾなし'}
+                  </span>
+                  <span>
+                    {view.hasRadiantEncore
+                      ? 'アンコール実行可'
+                      : 'アンコールなし'}
+                  </span>
+                </div>
+              </>
+            ) : null}
           </section>
 
           <section className="timers" aria-label="タイマー">

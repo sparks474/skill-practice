@@ -1,8 +1,9 @@
 import { getSkill } from '../data/skills'
-import type { FreePracticeSummary } from '../types'
+import type { FreePracticeSummary, JobId } from '../types'
 
 type Props = {
   summary: FreePracticeSummary
+  jobId: JobId
   jobNameJa: string
   onRetry: () => void
   onHome: () => void
@@ -15,10 +16,14 @@ function formatMs(ms: number): string {
 
 export function FreeResultView({
   summary,
+  jobId,
   jobNameJa,
   onRetry,
   onHome,
 }: Props) {
+  const heatLabel = jobId === 'BRD' ? '未使用ゲージ溢れ' : 'ヒート溢れ'
+  const batteryLabel = jobId === 'BRD' ? 'ソウルボイス溢れ' : 'バッテリー溢れ'
+
   return (
     <div className="page">
       <header className="page-header">
@@ -49,12 +54,14 @@ export function FreeResultView({
             空き時間（無駄）
             <strong>{formatMs(summary.idleWasteMs)}</strong>
           </li>
+          {jobId !== 'BRD' || summary.heatOverflow > 0 ? (
+            <li>
+              {heatLabel}
+              <strong>{summary.heatOverflow}</strong>
+            </li>
+          ) : null}
           <li>
-            ヒート溢れ
-            <strong>{summary.heatOverflow}</strong>
-          </li>
-          <li>
-            バッテリー溢れ
+            {batteryLabel}
             <strong>{summary.batteryOverflow}</strong>
           </li>
           {summary.failCount > 0 ? (
@@ -67,7 +74,8 @@ export function FreeResultView({
         <p className="muted result-hint">
           空き時間は、GCD・硬直・詠唱が空いているのに Weaponskill
           を押さなかった合計です（発動遊び以内は除く）。ゲージ溢れは、すでに
-          100 のゲージへさらに加算したときです。
+          100 のゲージへさらに加算したときです
+          {jobId === 'BRD' ? '（詩人はソウルボイス）' : ''}。
         </p>
       </section>
 
@@ -90,7 +98,14 @@ export function FreeResultView({
               )
             }
             if (e.type === 'gauge_overflow') {
-              const g = e.gauge === 'heat' ? 'ヒート' : 'バッテリー'
+              const g =
+                e.gauge === 'heat'
+                  ? jobId === 'BRD'
+                    ? '未使用'
+                    : 'ヒート'
+                  : jobId === 'BRD'
+                    ? 'ソウルボイス'
+                    : 'バッテリー'
               return (
                 <li key={i} className="waste">
                   {t} ゲージ溢れ（{g}）: {name}

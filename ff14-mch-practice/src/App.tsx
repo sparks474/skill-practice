@@ -277,6 +277,7 @@ function App() {
     return (
       <FreeResultView
         summary={screen.summary}
+        jobId={selectedJob}
         jobNameJa={jobNameJa(selectedJob)}
         onHome={goHome}
         onRetry={() => setScreen({ name: 'free-practice' })}

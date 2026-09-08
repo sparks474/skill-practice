@@ -284,37 +284,69 @@ export function PracticeView({
       </section>
 
       <section className="gauges" aria-label="ゲージ">
-        <div className="gauge">
-          <div className="gauge-label">
-            <span>ヒート</span>
-            <span>{snap.gauges.heat}</span>
-          </div>
-          <div className="gauge-track">
-            <div
-              className="gauge-fill heat"
-              style={{ width: `${snap.gauges.heat}%` }}
-            />
-          </div>
-        </div>
-        <div className="gauge">
-          <div className="gauge-label">
-            <span>バッテリー</span>
-            <span>{snap.gauges.battery}</span>
-          </div>
-          <div className="gauge-track">
-            <div
-              className="gauge-fill battery"
-              style={{ width: `${snap.gauges.battery}%` }}
-            />
-          </div>
-        </div>
-        <div className="status-pills">
-          <span>OH×{snap.overheatStacks}</span>
-          <span>{snap.hasFullMetal ? 'フルメタル準備' : 'FMなし'}</span>
-          <span>
-            {snap.hasHyperchargeReady ? 'HC実行可' : 'HC通常'}
-          </span>
-        </div>
+        {rotation.jobId === 'MCH' ? (
+          <>
+            <div className="gauge">
+              <div className="gauge-label">
+                <span>ヒート</span>
+                <span>{snap.gauges.heat}</span>
+              </div>
+              <div className="gauge-track">
+                <div
+                  className="gauge-fill heat"
+                  style={{ width: `${snap.gauges.heat}%` }}
+                />
+              </div>
+            </div>
+            <div className="gauge">
+              <div className="gauge-label">
+                <span>バッテリー</span>
+                <span>{snap.gauges.battery}</span>
+              </div>
+              <div className="gauge-track">
+                <div
+                  className="gauge-fill battery"
+                  style={{ width: `${snap.gauges.battery}%` }}
+                />
+              </div>
+            </div>
+            <div className="status-pills">
+              <span>OH×{snap.overheatStacks}</span>
+              <span>{snap.hasFullMetal ? 'フルメタル準備' : 'FMなし'}</span>
+              <span>
+                {snap.hasHyperchargeReady ? 'HC実行可' : 'HC通常'}
+              </span>
+            </div>
+          </>
+        ) : null}
+        {rotation.jobId === 'BRD' ? (
+          <>
+            <div className="gauge">
+              <div className="gauge-label">
+                <span>ソウルボイス</span>
+                <span>{snap.gauges.battery}</span>
+              </div>
+              <div className="gauge-track">
+                <div
+                  className="gauge-fill battery"
+                  style={{ width: `${snap.gauges.battery}%` }}
+                />
+              </div>
+            </div>
+            <div className="status-pills">
+              <span>{snap.hasHawksEye ? 'ホークアイ' : 'HEなし'}</span>
+              <span>
+                {snap.hasBlastArrow ? 'ブラスト実行可' : 'ブラストなし'}
+              </span>
+              <span>
+                {snap.hasResonanceArrow ? 'レゾナンス実行可' : 'レゾなし'}
+              </span>
+              <span>
+                {snap.hasRadiantEncore ? 'アンコール実行可' : 'アンコールなし'}
+              </span>
+            </div>
+          </>
+        ) : null}
       </section>
 
       <section className="timers" aria-label="タイマー">

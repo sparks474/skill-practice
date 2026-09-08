@@ -25,6 +25,26 @@ export const DEFAULT_HOTBAR_SKILL_IDS = [
 
 const DEFAULT_HOTBAR_BY_JOB: Partial<Record<JobId, readonly string[]>> = {
   MCH: DEFAULT_HOTBAR_SKILL_IDS,
+  BRD: [
+    'the_wanderers_minuet',
+    'raging_strikes',
+    'battle_voice',
+    'radiant_finale',
+    'barrage',
+    'empyreal_arrow',
+    'sidewinder',
+    'heartbreak_shot',
+    'pitch_perfect',
+    'apex_arrow',
+    'resonance_arrow',
+    'radiant_encore',
+    'burst_shot',
+    'caustic_bite',
+    'stormbite',
+    'iron_jaws',
+    'refulgent_arrow',
+    'potion',
+  ],
 }
 
 export function createDefaultHotbarLayout(jobId: JobId = 'MCH'): HotbarLayout {

@@ -12,7 +12,8 @@
     "test:keys": "tsx scripts/test-key-resolve.mts",
     "test:score": "tsx scripts/test-score-summary.mts",
     "test:mash": "tsx scripts/test-mash-lock.mts",
-    "test:free": "tsx scripts/test-free-practice.mts"
+    "test:free": "tsx scripts/test-free-practice.mts",
+    "test:brd": "tsx scripts/test-brd-skills.mts"
   },
   "dependencies": {
     "react": "^19.2.8",

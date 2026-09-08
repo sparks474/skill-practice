@@ -326,23 +326,308 @@ export const SKILLS: Skill[] = [
     category: 'ability',
     castMs: 0,
     recastMs: 300_000, // 固有リキャスト 5分（効果なし・タイミング練習用）
-    tags: ['item'],
+    tags: ['item', 'shared'],
+  },
+
+  // =====================================================================
+  // 吟遊詩人（BRD）Lv100 PvE
+  // 出典: https://jp.finalfantasyxiv.com/jobguide/bard/
+  // ゲージ: battery = ソウルボイス（0–100）。ヒートは未使用。
+  // 詩心の確率発動・戦歌スタックは練習では簡略化（エンピリアルで SV+5 のみ）。
+  // =====================================================================
+
+  // —— ウェポンスキル（単体） ——
+  {
+    id: 'burst_shot',
+    nameJa: 'バーストショット',
+    jobId: 'BRD',
+    category: 'skill',
+    castMs: 0,
+    recastMs: 0,
+    tags: ['filler'],
+  },
+  {
+    id: 'refulgent_arrow',
+    nameJa: 'リフルジェントアロー',
+    jobId: 'BRD',
+    category: 'skill',
+    castMs: 0,
+    recastMs: 0,
+    requiresHawksEye: true,
+    tags: ['proc'],
+  },
+  {
+    id: 'caustic_bite',
+    nameJa: 'コースティックバイト',
+    jobId: 'BRD',
+    category: 'skill',
+    castMs: 0,
+    recastMs: 0,
+    tags: ['dot'],
+  },
+  {
+    id: 'stormbite',
+    nameJa: 'ストームバイト',
+    jobId: 'BRD',
+    category: 'skill',
+    castMs: 0,
+    recastMs: 0,
+    tags: ['dot'],
+  },
+  {
+    id: 'iron_jaws',
+    nameJa: 'アイアンジョー',
+    jobId: 'BRD',
+    category: 'skill',
+    castMs: 0,
+    recastMs: 0,
+    tags: ['dot'],
+  },
+  {
+    id: 'apex_arrow',
+    nameJa: 'エイペックスアロー',
+    jobId: 'BRD',
+    category: 'skill',
+    castMs: 0,
+    recastMs: 0,
+    // ソウルボイス 20 以上で実行、全消費。80 以上ならブラストアロー実行可
+    gauge: { require: { battery: 20 } },
+    consumeAllBattery: true,
+    grantsBlastArrow: true,
+    grantsBlastArrowMinBattery: 80,
+    tags: ['gauge'],
+  },
+  {
+    id: 'blast_arrow',
+    nameJa: 'ブラストアロー',
+    jobId: 'BRD',
+    category: 'skill',
+    castMs: 0,
+    recastMs: 0,
+    requiresBlastArrow: true,
+    tags: ['gauge'],
+  },
+  {
+    id: 'resonance_arrow',
+    nameJa: 'レゾナンスアロー',
+    jobId: 'BRD',
+    category: 'skill',
+    castMs: 0,
+    recastMs: 0,
+    requiresResonanceArrow: true,
+    tags: ['burst'],
+  },
+  {
+    id: 'radiant_encore',
+    nameJa: '光神のアンコール',
+    jobId: 'BRD',
+    category: 'skill',
+    castMs: 0,
+    recastMs: 0,
+    requiresRadiantEncore: true,
+    tags: ['burst'],
+  },
+
+  // —— ウェポンスキル（範囲） ——
+  {
+    id: 'ladonsbite',
+    nameJa: 'ラドンバイト',
+    jobId: 'BRD',
+    category: 'skill',
+    castMs: 0,
+    recastMs: 0,
+    tags: ['aoe', 'filler'],
+  },
+  {
+    id: 'shadowbite',
+    nameJa: 'シャドウバイト',
+    jobId: 'BRD',
+    category: 'skill',
+    castMs: 0,
+    recastMs: 0,
+    requiresHawksEye: true,
+    tags: ['aoe', 'proc'],
+  },
+
+  // —— アビリティ（攻撃） ——
+  {
+    id: 'heartbreak_shot',
+    nameJa: 'ハートブレイクショット',
+    jobId: 'BRD',
+    category: 'ability',
+    castMs: 0,
+    recastMs: 15_000,
+    charges: 3,
+    sharedRecastGroup: 'bloodletter',
+    tags: ['ogcd'],
+  },
+  {
+    id: 'rain_of_death',
+    nameJa: 'レイン・オブ・デス',
+    jobId: 'BRD',
+    category: 'ability',
+    castMs: 0,
+    recastMs: 15_000,
+    charges: 3,
+    sharedRecastGroup: 'bloodletter',
+    tags: ['aoe', 'ogcd'],
+  },
+  {
+    id: 'empyreal_arrow',
+    nameJa: 'エンピリアルアロー',
+    jobId: 'BRD',
+    category: 'ability',
+    castMs: 0,
+    recastMs: 15_000,
+    // 戦歌中は詩心付与 → ソウルボイス +5（確率詩心は省略し、実行時に +5）
+    gauge: { delta: { battery: 5 } },
+    tags: ['ogcd'],
+  },
+  {
+    id: 'sidewinder',
+    nameJa: 'サイドワインダー',
+    jobId: 'BRD',
+    category: 'ability',
+    castMs: 0,
+    recastMs: 60_000,
+    tags: ['ogcd'],
+  },
+  {
+    id: 'pitch_perfect',
+    nameJa: 'ピッチパーフェクト',
+    jobId: 'BRD',
+    category: 'ability',
+    castMs: 0,
+    recastMs: 1_000,
+    // 旅神のメヌエット＋詩心スタックは練習では未シミュ（常時実行可）
+    tags: ['ogcd', 'song'],
+  },
+
+  // —— 戦歌／バースト ——
+  {
+    id: 'the_wanderers_minuet',
+    nameJa: '旅神のメヌエット',
+    jobId: 'BRD',
+    category: 'ability',
+    castMs: 0,
+    recastMs: 120_000,
+    tags: ['song', 'burst'],
+  },
+  {
+    id: 'mages_ballad',
+    nameJa: '賢人のバラード',
+    jobId: 'BRD',
+    category: 'ability',
+    castMs: 0,
+    recastMs: 120_000,
+    tags: ['song'],
+  },
+  {
+    id: 'armys_paeon',
+    nameJa: '軍神のパイオン',
+    jobId: 'BRD',
+    category: 'ability',
+    castMs: 0,
+    recastMs: 120_000,
+    tags: ['song'],
+  },
+  {
+    id: 'barrage',
+    nameJa: '乱れ撃ち',
+    jobId: 'BRD',
+    category: 'ability',
+    castMs: 0,
+    recastMs: 120_000,
+    grantsHawksEye: true,
+    grantsResonanceArrow: true,
+    tags: ['burst'],
+  },
+  {
+    id: 'raging_strikes',
+    nameJa: '猛者の撃',
+    jobId: 'BRD',
+    category: 'ability',
+    castMs: 0,
+    recastMs: 120_000,
+    tags: ['burst'],
+  },
+  {
+    id: 'battle_voice',
+    nameJa: 'バトルボイス',
+    jobId: 'BRD',
+    category: 'ability',
+    castMs: 0,
+    recastMs: 120_000,
+    tags: ['burst'],
+  },
+  {
+    id: 'radiant_finale',
+    nameJa: '光神のフィナーレ',
+    jobId: 'BRD',
+    category: 'ability',
+    castMs: 0,
+    recastMs: 110_000,
+    // コーダ条件は練習では未強制
+    grantsRadiantEncore: true,
+    tags: ['burst'],
+  },
+
+  // —— 軽減・ユーティリティ ——
+  {
+    id: 'troubadour',
+    nameJa: 'トルバドゥール',
+    jobId: 'BRD',
+    category: 'ability',
+    castMs: 0,
+    recastMs: 90_000,
+    tags: ['mit'],
+  },
+  {
+    id: 'natures_minne',
+    nameJa: '地神のミンネ',
+    jobId: 'BRD',
+    category: 'ability',
+    castMs: 0,
+    recastMs: 120_000,
+    tags: ['heal'],
+  },
+  {
+    id: 'the_wardens_paean',
+    nameJa: '時神のピーアン',
+    jobId: 'BRD',
+    category: 'ability',
+    castMs: 0,
+    recastMs: 45_000,
+    tags: ['utility'],
+  },
+  {
+    id: 'repelling_shot',
+    nameJa: 'リペリングショット',
+    jobId: 'BRD',
+    category: 'ability',
+    castMs: 0,
+    recastMs: 30_000,
+    tags: ['utility'],
   },
 ]
 
 export const SKILL_BY_ID: Record<string, Skill> = Object.fromEntries(
-  SKILLS.map((s) => [s.id, { ...s, jobId: s.jobId ?? 'MCH' }]),
+  SKILLS.map((s) => {
+    const shared = s.tags?.includes('shared')
+    return [s.id, { ...s, jobId: shared ? s.jobId : (s.jobId ?? 'MCH') }]
+  }),
 )
 
 export function getSkill(id: string): Skill | undefined {
   return SKILL_BY_ID[id]
 }
 
-/** ジョブのスキル一覧（データ未登録ジョブは空） */
+/** ジョブのスキル一覧（shared タグは全ジョブに含める） */
 export function getSkillsForJob(jobId: JobId): Skill[] {
-  return SKILLS.filter((s) => (s.jobId ?? DEFAULT_JOB_ID) === jobId).map(
-    (s) => SKILL_BY_ID[s.id] ?? s,
-  )
+  return SKILLS.filter((s) => {
+    if (s.tags?.includes('shared')) return true
+    return (s.jobId ?? DEFAULT_JOB_ID) === jobId
+  }).map((s) => SKILL_BY_ID[s.id] ?? s)
 }
 
 /** 同一リキャストグループに属するスキル ID 一覧 */
