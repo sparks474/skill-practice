@@ -270,7 +270,10 @@ export class PracticeRuntime {
       return `その他失敗: ${conditionError}`
     }
 
-    const idleMs = Math.max(0, this.state.nowMs - readyAt)
+    const rawIdleMs = Math.max(0, this.state.nowMs - readyAt)
+    const slack = Math.max(0, this.config.activationSlackMs)
+    // 遊び時間以内は空きとして扱わない
+    const idleMs = Math.max(0, rawIdleMs - slack)
     const stepIndex = this.state.stepIndex
 
     this.applyExecution(skill)

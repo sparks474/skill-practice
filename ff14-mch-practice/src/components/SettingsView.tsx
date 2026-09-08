@@ -135,9 +135,24 @@ export function SettingsView({
             }
           />
         </label>
+        <label>
+          発動遊び (ms)
+          <input
+            type="number"
+            value={draftConfig.activationSlackMs}
+            onChange={(e) =>
+              setDraftConfig({
+                ...draftConfig,
+                activationSlackMs: Number(e.target.value) || 0,
+              })
+            }
+          />
+        </label>
       </section>
       <p className="muted result-hint">
         連打猶予は、スキル発動からその時間だけ「直前と同じスキル」の再入力を押し間違いにしません（硬直より短くしても硬直中は無視します）。
+        発動遊びは、使えるようになってからその時間までの遅れを空き時間に含めません（予約発火や FPS
+        の誤差用、初期 100ms）。
       </p>
 
       <section>

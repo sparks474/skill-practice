@@ -50,7 +50,7 @@ export function ResultView({ summary, rotationName, onRetry, onHome }: Props) {
           ) : null}
         </ul>
         <p className="muted result-hint">
-          空き時間は、次スキルが使えるようになってから押すまでの合計です（開始の1手目は除く）。先行入力で待ち続ければ短くなります。
+          空き時間は、次スキルが使えるようになってから押すまでの合計です（開始の1手目と発動遊び以内は除く）。先行入力で待ち続ければ短くなります。
         </p>
       </section>
 
