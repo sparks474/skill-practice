@@ -50,8 +50,6 @@ export type Rotation = {
 export type EngineConfig = {
   defaultAnimationLockMs: number
   queueWindowMs: number
-  perfectWindowMs: number
-  okWindowMs: number
 }
 
 /** 移動キー（練習中は入力しても無視・ミス判定なし） */
@@ -82,15 +80,13 @@ export type KeybindEntry = {
 
 export type Keybinds = Record<string, KeybindEntry>
 
-export type TimingGrade = 'perfect' | 'ok' | 'late'
-
 export type ScoreEvent =
   | {
       type: 'success'
       skillId: string
       stepIndex: number
-      grade: TimingGrade
-      delayMs: number
+      /** 発動可能になってから実際に発動するまでの空き時間（ms） */
+      idleMs: number
       usedQueue: boolean
       atMs: number
     }
@@ -112,12 +108,13 @@ export type ScoreEvent =
 export type PracticeSummary = {
   totalSteps: number
   successCount: number
-  perfect: number
-  ok: number
-  late: number
   wrongInput: number
   otherFail: number
-  queueUsed: number
+  /**
+   * クールダウン／GCD 等が開けているのにスキルを回さなかった合計時間。
+   * 1手目（開始待ち）は含めない。
+   */
+  idleWasteMs: number
   events: ScoreEvent[]
   elapsedMs: number
 }
@@ -125,8 +122,6 @@ export type PracticeSummary = {
 export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
   defaultAnimationLockMs: 670,
   queueWindowMs: 500,
-  perfectWindowMs: 50,
-  okWindowMs: 150,
 }
 
 /** FF14 既定に近い WASD */

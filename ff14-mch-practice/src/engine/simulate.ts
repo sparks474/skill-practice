@@ -14,6 +14,8 @@ export function simulateOpener(
   totalSteps: number
   elapsedMs: number
   otherFails: number
+  idleWasteMs: number
+  wrongInput: number
   log: string[]
 } {
   const rt = new PracticeRuntime(rotation, config)
@@ -40,7 +42,7 @@ export function simulateOpener(
       const msg = rt.handleInput(expectedId)
       if (msg.startsWith('その他失敗') || msg === '押し間違い') {
         log.push(`t=${t} ${skill.nameJa}: ${msg}`)
-      } else if (msg.startsWith('Perfect') || msg.startsWith('OK') || msg.startsWith('Late')) {
+      } else if (msg.startsWith('発動') || msg.startsWith('空き')) {
         log.push(`t=${t} ${skill.nameJa}: ${msg}`)
       } else if (msg.startsWith('予約')) {
         // queued
@@ -56,6 +58,8 @@ export function simulateOpener(
     totalSteps: rotation.steps.length,
     elapsedMs: snap.nowMs,
     otherFails: summary.otherFail,
+    idleWasteMs: summary.idleWasteMs,
+    wrongInput: summary.wrongInput,
     log,
   }
 }

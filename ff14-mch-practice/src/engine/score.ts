@@ -6,20 +6,17 @@ export function summarizeEvents(
   elapsedMs: number,
 ): PracticeSummary {
   let successCount = 0
-  let perfect = 0
-  let ok = 0
-  let late = 0
   let wrongInput = 0
   let otherFail = 0
-  let queueUsed = 0
+  let idleWasteMs = 0
 
   for (const e of events) {
     if (e.type === 'success') {
       successCount += 1
-      if (e.grade === 'perfect') perfect += 1
-      else if (e.grade === 'ok') ok += 1
-      else late += 1
-      if (e.usedQueue) queueUsed += 1
+      // 1手目は開始待ちなので空き時間に含めない
+      if (e.stepIndex > 0) {
+        idleWasteMs += e.idleMs
+      }
     } else if (e.type === 'wrong_input') {
       wrongInput += 1
     } else if (e.type === 'other_fail') {
@@ -30,12 +27,9 @@ export function summarizeEvents(
   return {
     totalSteps,
     successCount,
-    perfect,
-    ok,
-    late,
     wrongInput,
     otherFail,
-    queueUsed,
+    idleWasteMs,
     events: [...events],
     elapsedMs,
   }

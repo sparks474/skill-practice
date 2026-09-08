@@ -6,7 +6,6 @@ import type {
   Rotation,
   ScoreEvent,
   Skill,
-  TimingGrade,
 } from '../types'
 import { summarizeEvents } from './score'
 
@@ -61,15 +60,6 @@ type InternalState = {
 
 function clampGauge(n: number): number {
   return Math.max(0, Math.min(100, n))
-}
-
-function gradeForDelay(
-  delayMs: number,
-  config: EngineConfig,
-): TimingGrade {
-  if (delayMs <= config.perfectWindowMs) return 'perfect'
-  if (delayMs <= config.okWindowMs) return 'ok'
-  return 'late'
 }
 
 export class PracticeRuntime {
@@ -266,17 +256,16 @@ export class PracticeRuntime {
       return `その他失敗: ${conditionError}`
     }
 
-    const delayMs = Math.max(0, this.state.nowMs - readyAt)
-    const grade = gradeForDelay(delayMs, this.config)
+    const idleMs = Math.max(0, this.state.nowMs - readyAt)
+    const stepIndex = this.state.stepIndex
 
     this.applyExecution(skill)
 
     this.state.events.push({
       type: 'success',
       skillId: skill.id,
-      stepIndex: this.state.stepIndex,
-      grade,
-      delayMs,
+      stepIndex,
+      idleMs,
       usedQueue,
       atMs: this.state.nowMs,
     })
@@ -286,9 +275,14 @@ export class PracticeRuntime {
       this.state.finished = true
     }
 
-    const label =
-      grade === 'perfect' ? 'Perfect' : grade === 'ok' ? 'OK' : 'Late'
-    this.state.lastFeedback = `${label}（+${Math.round(delayMs)}ms）`
+    // 1手目は開始待ちのため空き表示しない。以降は空きがあれば示す。
+    if (stepIndex === 0 || idleMs <= 0) {
+      this.state.lastFeedback = usedQueue
+        ? `発動（予約）: ${skill.nameJa}`
+        : `発動: ${skill.nameJa}`
+    } else {
+      this.state.lastFeedback = `空き +${Math.round(idleMs)}ms`
+    }
     return this.state.lastFeedback
   }
 

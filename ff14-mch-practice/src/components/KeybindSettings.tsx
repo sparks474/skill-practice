@@ -180,32 +180,6 @@ export function KeybindSettings({
             }
           />
         </label>
-        <label>
-          Perfect (ms)
-          <input
-            type="number"
-            value={draftConfig.perfectWindowMs}
-            onChange={(e) =>
-              setDraftConfig({
-                ...draftConfig,
-                perfectWindowMs: Number(e.target.value) || 0,
-              })
-            }
-          />
-        </label>
-        <label>
-          OK (ms)
-          <input
-            type="number"
-            value={draftConfig.okWindowMs}
-            onChange={(e) =>
-              setDraftConfig({
-                ...draftConfig,
-                okWindowMs: Number(e.target.value) || 0,
-              })
-            }
-          />
-        </label>
       </section>
 
       <section>
