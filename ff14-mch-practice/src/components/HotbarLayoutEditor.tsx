@@ -7,28 +7,34 @@ import {
   resizeHotbarCols,
   resizeHotbarRows,
 } from '../data/hotbarLayout'
-import { getSkill, SKILLS } from '../data/skills'
+import { getSkill } from '../data/skills'
 import { effectiveKey, getSwapPartner } from '../data/skillSlots'
 import { formatKeyLabel } from '../input/keys'
-import type { HotbarLayout, Keybinds } from '../types'
+import type { HotbarLayout, Keybinds, Skill } from '../types'
 
 type Props = {
   layout: HotbarLayout
   keybinds: Keybinds
+  skills: Skill[]
   onChange: (layout: HotbarLayout) => void
 }
 
 const DRAG_SKILL = 'application/x-mch-skill'
 const DRAG_FROM = 'application/x-mch-from'
 
-export function HotbarLayoutEditor({ layout, keybinds, onChange }: Props) {
+export function HotbarLayoutEditor({
+  layout,
+  keybinds,
+  skills,
+  onChange,
+}: Props) {
   const [dragOver, setDragOver] = useState<number | null>(null)
 
   const placed = new Set(
     layout.slots.filter((id): id is string => Boolean(id)),
   )
 
-  const palette = SKILLS.filter((s) => {
+  const palette = skills.filter((s) => {
     if (keybinds[s.id]?.unused) return false
     const canon = canonicalHotbarSkillId(s.id, keybinds)
     // 置き換え相手は代表のみパレットに出す

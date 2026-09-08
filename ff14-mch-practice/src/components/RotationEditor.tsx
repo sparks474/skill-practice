@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
-import { SKILLS } from '../data/skills'
-import type { Keybinds, Rotation, SkillCategory } from '../types'
+import { JOBS, jobNameJa } from '../data/jobs'
+import { getSkill, getSkillsForJob } from '../data/skills'
+import type { JobId, Keybinds, Rotation, SkillCategory } from '../types'
 
 type Props = {
   rotation: Rotation
@@ -12,20 +13,26 @@ type Props = {
 export function RotationEditor({ rotation, keybinds, onSave, onCancel }: Props) {
   const [draft, setDraft] = useState<Rotation>(() => ({
     ...rotation,
+    jobId: rotation.jobId,
     initialGauges: { ...rotation.initialGauges },
     steps: rotation.steps.map((s) => ({ ...s })),
   }))
   const [filter, setFilter] = useState<'all' | SkillCategory>('all')
   const [query, setQuery] = useState('')
 
+  const jobSkills = useMemo(
+    () => getSkillsForJob(draft.jobId),
+    [draft.jobId],
+  )
+
   const filteredSkills = useMemo(() => {
-    return SKILLS.filter((s) => {
+    return jobSkills.filter((s) => {
       if (keybinds[s.id]?.unused) return false
       if (filter !== 'all' && s.category !== filter) return false
       if (query && !s.nameJa.includes(query)) return false
       return true
     })
-  }, [filter, query, keybinds])
+  }, [filter, query, keybinds, jobSkills])
 
   function updateStep(index: number, skillId: string) {
     setDraft((d) => {
@@ -59,11 +66,20 @@ export function RotationEditor({ rotation, keybinds, onSave, onCancel }: Props) 
     }))
   }
 
+  function changeJob(jobId: JobId) {
+    setDraft((d) => ({
+      ...d,
+      jobId,
+      // ジョブ変更時は他ジョブの手順をクリア
+      steps: d.jobId === jobId ? d.steps : [],
+    }))
+  }
+
   return (
     <div className="page">
       <header className="page-header">
         <div>
-          <p className="brand">MCH Practice</p>
+          <p className="brand">Skill Practice</p>
           <h1>回し編集</h1>
         </div>
         <div className="header-actions">
@@ -87,6 +103,20 @@ export function RotationEditor({ rotation, keybinds, onSave, onCancel }: Props) 
 
       <section className="editor-meta">
         <label>
+          ジョブ
+          <select
+            value={draft.jobId}
+            disabled={Boolean(draft.isSample)}
+            onChange={(e) => changeJob(e.target.value as JobId)}
+          >
+            {JOBS.map((j) => (
+              <option key={j.id} value={j.id}>
+                {j.nameJa}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
           名前
           <input
             value={draft.name}
@@ -106,42 +136,46 @@ export function RotationEditor({ rotation, keybinds, onSave, onCancel }: Props) 
             }
           />
         </label>
-        <label>
-          初期ヒート
-          <input
-            type="number"
-            min={0}
-            max={100}
-            value={draft.initialGauges.heat}
-            onChange={(e) =>
-              setDraft({
-                ...draft,
-                initialGauges: {
-                  ...draft.initialGauges,
-                  heat: Number(e.target.value) || 0,
-                },
-              })
-            }
-          />
-        </label>
-        <label>
-          初期バッテリー
-          <input
-            type="number"
-            min={0}
-            max={100}
-            value={draft.initialGauges.battery}
-            onChange={(e) =>
-              setDraft({
-                ...draft,
-                initialGauges: {
-                  ...draft.initialGauges,
-                  battery: Number(e.target.value) || 0,
-                },
-              })
-            }
-          />
-        </label>
+        {draft.jobId === 'MCH' ? (
+          <>
+            <label>
+              初期ヒート
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={draft.initialGauges.heat}
+                onChange={(e) =>
+                  setDraft({
+                    ...draft,
+                    initialGauges: {
+                      ...draft.initialGauges,
+                      heat: Number(e.target.value) || 0,
+                    },
+                  })
+                }
+              />
+            </label>
+            <label>
+              初期バッテリー
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={draft.initialGauges.battery}
+                onChange={(e) =>
+                  setDraft({
+                    ...draft,
+                    initialGauges: {
+                      ...draft.initialGauges,
+                      battery: Number(e.target.value) || 0,
+                    },
+                  })
+                }
+              />
+            </label>
+          </>
+        ) : null}
         <label className="full">
           メモ
           <input
@@ -151,12 +185,19 @@ export function RotationEditor({ rotation, keybinds, onSave, onCancel }: Props) 
         </label>
       </section>
 
+      {jobSkills.length === 0 ? (
+        <p className="muted">
+          {jobNameJa(draft.jobId)}
+          のスキルデータはまだありません。機工士を選ぶか、データ追加をお待ちください。
+        </p>
+      ) : null}
+
       <div className="editor-grid">
         <section>
           <h2>手順（{draft.steps.length}）</h2>
           <ol className="step-list">
             {draft.steps.map((step, i) => {
-              const skill = SKILLS.find((s) => s.id === step.skillId)
+              const skill = getSkill(step.skillId)
               return (
                 <li key={`${step.skillId}-${i}`}>
                   <span className="step-idx">{i + 1}</span>
@@ -164,27 +205,41 @@ export function RotationEditor({ rotation, keybinds, onSave, onCancel }: Props) 
                     value={step.skillId}
                     onChange={(e) => updateStep(i, e.target.value)}
                   >
-                    {/* 既に手順にある不要スキルは表示を残す */}
-                    {SKILLS.filter(
-                      (s) =>
-                        !keybinds[s.id]?.unused || s.id === step.skillId,
-                    ).map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.nameJa}（{s.category === 'skill' ? 'スキル' : 'アビ'}）
-                        {keybinds[s.id]?.unused ? '・不要' : ''}
-                      </option>
-                    ))}
+                    {jobSkills
+                      .filter(
+                        (s) =>
+                          !keybinds[s.id]?.unused || s.id === step.skillId,
+                      )
+                      .map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.nameJa}（
+                          {s.category === 'skill' ? 'スキル' : 'アビ'}）
+                          {keybinds[s.id]?.unused ? '・不要' : ''}
+                        </option>
+                      ))}
                   </select>
                   <span className="muted">
                     {skill?.category === 'skill' ? 'スキル' : 'アビ'}
                   </span>
-                  <button type="button" className="btn ghost" onClick={() => moveStep(i, -1)}>
+                  <button
+                    type="button"
+                    className="btn ghost"
+                    onClick={() => moveStep(i, -1)}
+                  >
                     ↑
                   </button>
-                  <button type="button" className="btn ghost" onClick={() => moveStep(i, 1)}>
+                  <button
+                    type="button"
+                    className="btn ghost"
+                    onClick={() => moveStep(i, 1)}
+                  >
                     ↓
                   </button>
-                  <button type="button" className="btn danger" onClick={() => removeStep(i)}>
+                  <button
+                    type="button"
+                    className="btn danger"
+                    onClick={() => removeStep(i)}
+                  >
                     削除
                   </button>
                 </li>
@@ -226,7 +281,11 @@ export function RotationEditor({ rotation, keybinds, onSave, onCancel }: Props) 
           <ul className="skill-picker">
             {filteredSkills.map((s) => (
               <li key={s.id}>
-                <button type="button" className="btn ghost wide" onClick={() => addSkill(s.id)}>
+                <button
+                  type="button"
+                  className="btn ghost wide"
+                  onClick={() => addSkill(s.id)}
+                >
                   <span>{s.nameJa}</span>
                   <span className="muted">
                     {s.category === 'skill' ? 'スキル' : 'アビ'}

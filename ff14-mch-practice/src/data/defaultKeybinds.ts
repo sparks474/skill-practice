@@ -1,9 +1,9 @@
-import type { Keybinds } from '../types'
-import { SKILLS } from './skills'
+import type { JobId, Keybinds } from '../types'
+import { getSkillsForJob } from './skills'
 import { DEFAULT_SWAP_PAIRS } from './skillSlots'
 
-/** よく使うアクション向けの初期キー配置 */
-const PRESET: Keybinds = {
+/** よく使うアクション向けの初期キー配置（機工） */
+const MCH_PRESET: Keybinds = {
   heated_split_shot: { key: '1' },
   heated_slug_shot: { key: '2' },
   heated_clean_shot: { key: '3' },
@@ -20,27 +20,36 @@ const PRESET: Keybinds = {
   automaton_queen: { key: 'x' },
 }
 
-export function createDefaultKeybinds(): Keybinds {
+const PRESETS: Partial<Record<JobId, Keybinds>> = {
+  MCH: MCH_PRESET,
+}
+
+export function createDefaultKeybinds(jobId: JobId = 'MCH'): Keybinds {
+  const skills = getSkillsForJob(jobId)
+  const preset = PRESETS[jobId] ?? {}
   const binds: Keybinds = {}
-  for (const skill of SKILLS) {
-    binds[skill.id] = PRESET[skill.id]
-      ? { ...PRESET[skill.id] }
+  for (const skill of skills) {
+    binds[skill.id] = preset[skill.id]
+      ? { ...preset[skill.id] }
       : { mouse: true }
   }
 
-  for (const [a, b] of DEFAULT_SWAP_PAIRS) {
-    const sharedKey = binds[a]?.key ?? binds[b]?.key
-    binds[a] = {
-      ...binds[a],
-      swapWith: b,
-      key: sharedKey,
-      mouse: binds[a]?.mouse ?? true,
-    }
-    binds[b] = {
-      ...binds[b],
-      swapWith: a,
-      key: sharedKey,
-      mouse: binds[b]?.mouse ?? binds[a]?.mouse ?? true,
+  if (jobId === 'MCH') {
+    for (const [a, b] of DEFAULT_SWAP_PAIRS) {
+      if (!binds[a] || !binds[b]) continue
+      const sharedKey = binds[a]?.key ?? binds[b]?.key
+      binds[a] = {
+        ...binds[a],
+        swapWith: b,
+        key: sharedKey,
+        mouse: binds[a]?.mouse ?? true,
+      }
+      binds[b] = {
+        ...binds[b],
+        swapWith: a,
+        key: sharedKey,
+        mouse: binds[b]?.mouse ?? binds[a]?.mouse ?? true,
+      }
     }
   }
 

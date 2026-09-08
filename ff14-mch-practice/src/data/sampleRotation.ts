@@ -4,6 +4,7 @@ import type { Rotation } from '../types'
 export const SAMPLE_ROTATION: Rotation = {
   id: 'sample-mch-opener',
   name: '機工 開幕（サンプル）',
+  jobId: 'MCH',
   gcdMs: 2500,
   // 開幕練習用にヒート満タン開始（実戦の持ち越し想定）
   initialGauges: { heat: 100, battery: 0 },

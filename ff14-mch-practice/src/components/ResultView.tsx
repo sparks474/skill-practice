@@ -18,7 +18,7 @@ export function ResultView({ summary, rotationName, onRetry, onHome }: Props) {
     <div className="page">
       <header className="page-header">
         <div>
-          <p className="brand">MCH Practice</p>
+          <p className="brand">Skill Practice</p>
           <h1>結果</h1>
           <p className="lead">{rotationName}</p>
         </div>
