@@ -9,7 +9,8 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "simulate": "tsx scripts/simulate-opener.mts",
-    "test:keys": "tsx scripts/test-key-resolve.mts"
+    "test:keys": "tsx scripts/test-key-resolve.mts",
+    "test:score": "tsx scripts/test-score-summary.mts"
   },
   "dependencies": {
     "react": "^19.2.8",

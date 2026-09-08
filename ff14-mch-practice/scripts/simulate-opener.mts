@@ -16,9 +16,19 @@ console.log(
       totalSteps: result.totalSteps,
       elapsedMs: result.elapsedMs,
       otherFails: result.otherFails,
+      idleWasteMs: result.idleWasteMs,
+      wrongInput: result.wrongInput,
     },
     null,
     2,
   ),
 )
 if (!result.ok) process.exit(1)
+if (result.idleWasteMs > 0) {
+  console.error(`expected idleWasteMs=0 for optimal sim, got ${result.idleWasteMs}`)
+  process.exit(1)
+}
+if (result.wrongInput > 0) {
+  console.error(`expected wrongInput=0, got ${result.wrongInput}`)
+  process.exit(1)
+}

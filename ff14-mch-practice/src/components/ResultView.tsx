@@ -8,12 +8,12 @@ type Props = {
   onHome: () => void
 }
 
-export function ResultView({ summary, rotationName, onRetry, onHome }: Props) {
-  const rate =
-    summary.totalSteps === 0
-      ? 0
-      : Math.round((summary.successCount / summary.totalSteps) * 100)
+function formatMs(ms: number): string {
+  if (ms < 1000) return `${Math.round(ms)}ms`
+  return `${(ms / 1000).toFixed(2)}s`
+}
 
+export function ResultView({ summary, rotationName, onRetry, onHome }: Props) {
   return (
     <div className="page">
       <header className="page-header">
@@ -33,31 +33,38 @@ export function ResultView({ summary, rotationName, onRetry, onHome }: Props) {
       </header>
 
       <section className="result-summary">
-        <p className="result-score">
-          正解 {summary.successCount} / {summary.totalSteps}
-          <span className="muted">（{rate}%）</span>
-        </p>
         <ul className="result-stats">
-          <li>Perfect: {summary.perfect}</li>
-          <li>OK: {summary.ok}</li>
-          <li>Late: {summary.late}</li>
-          <li>押し間違い: {summary.wrongInput}</li>
-          <li>その他失敗: {summary.otherFail}</li>
-          <li>先行入力使用: {summary.queueUsed}</li>
-          <li>経過: {(summary.elapsedMs / 1000).toFixed(1)}s</li>
+          <li>
+            押し間違い
+            <strong>{summary.wrongInput}</strong>
+          </li>
+          <li>
+            空き時間（無駄）
+            <strong>{formatMs(summary.idleWasteMs)}</strong>
+          </li>
+          {summary.otherFail > 0 ? (
+            <li>
+              その他失敗
+              <strong>{summary.otherFail}</strong>
+            </li>
+          ) : null}
         </ul>
+        <p className="muted result-hint">
+          空き時間は、次スキルが使えるようになってから押すまでの合計です（開始の1手目は除く）。先行入力で待ち続ければ短くなります。
+        </p>
       </section>
 
       <section>
-        <h2>イベント</h2>
+        <h2>内訳</h2>
         <ol className="event-log">
           {summary.events.map((e, i) => {
             const skill = getSkill(e.skillId)
             if (e.type === 'success') {
+              const showIdle = e.stepIndex > 0 && e.idleMs > 0
               return (
-                <li key={i}>
-                  #{e.stepIndex + 1} {skill?.nameJa ?? e.skillId} —{' '}
-                  <strong>{e.grade}</strong> +{Math.round(e.delayMs)}ms
+                <li key={i} className={showIdle ? 'waste' : undefined}>
+                  #{e.stepIndex + 1} {skill?.nameJa ?? e.skillId}
+                  {showIdle ? ` — 空き +${Math.round(e.idleMs)}ms` : ''}
                   {e.usedQueue ? '（予約）' : ''}
                 </li>
               )
@@ -66,7 +73,8 @@ export function ResultView({ summary, rotationName, onRetry, onHome }: Props) {
               const expected = getSkill(e.expectedSkillId)
               return (
                 <li key={i} className="bad">
-                  押し間違い: {skill?.nameJa ?? e.skillId}（正: {expected?.nameJa}）
+                  押し間違い: {skill?.nameJa ?? e.skillId}（正:{' '}
+                  {expected?.nameJa}）
                 </li>
               )
             }

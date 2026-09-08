@@ -84,8 +84,8 @@ function swapActiveFromEvents(events: ScoreEvent[]) {
       skillId: 'chain_saw',
       stepIndex: 0,
       atMs: 0,
-      grade: 'perfect',
-      delayMs: 0,
+      idleMs: 0,
+      usedQueue: false,
     },
   ])
   assert(
