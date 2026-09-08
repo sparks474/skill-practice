@@ -233,7 +233,7 @@ select {
 
 .editor-grid {
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
+  grid-template-columns: minmax(0, 1.75fr) minmax(220px, 1fr);
   gap: 28px;
 }
 
@@ -263,6 +263,21 @@ select {
   align-items: center;
   padding: 8px 0;
   border-bottom: 1px solid var(--line);
+}
+
+.step-list .step-row {
+  flex-wrap: nowrap;
+}
+
+.step-list .step-row select {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: none;
+}
+
+.step-list .step-row > .muted,
+.step-list .step-row .btn {
+  flex-shrink: 0;
 }
 
 .step-list.is-dropping .step-row,
