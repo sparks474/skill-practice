@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { playSkillCastSfx } from '../audio/castSfx'
 import { getSkill } from '../data/skills'
 import {
   afterSuccessfulCast,
@@ -47,6 +48,10 @@ function swapActiveFromEvents(
   return active
 }
 
+function countSuccess(events: ScoreEvent[]): number {
+  return events.reduce((n, e) => (e.type === 'success' ? n + 1 : n), 0)
+}
+
 export function PracticeView({
   rotation,
   keybinds,
@@ -61,6 +66,7 @@ export function PracticeView({
   const clockStartedRef = useRef(false)
   const onFinishRef = useRef(onFinish)
   onFinishRef.current = onFinish
+  const castCountRef = useRef(0)
   const swapActiveRef = useRef<Record<string, string>>(
     createInitialSwapActive(keybinds),
   )
@@ -95,11 +101,23 @@ export function PracticeView({
     setSwapActive(next)
   }
 
+  function playNewCasts(events: ScoreEvent[]) {
+    const n = countSuccess(events)
+    if (n > castCountRef.current) {
+      // 予約発火で複数増えることは通常ないが、差分分鳴らす
+      for (let i = castCountRef.current; i < n; i++) {
+        playSkillCastSfx()
+      }
+      castCountRef.current = n
+    }
+  }
+
   function sync() {
     const rt = runtimeRef.current
     if (!rt) return
     const snapshot = rt.getSnapshot()
     syncSwapFromSnapshot(snapshot)
+    playNewCasts(snapshot.events)
     setSnap(snapshot)
   }
 
@@ -117,6 +135,7 @@ export function PracticeView({
     rt.handleInput(skillId)
     const after = rt.getSnapshot()
     syncSwapFromSnapshot(after)
+    playNewCasts(after.events)
     setSnap(after)
   }
 
@@ -124,6 +143,7 @@ export function PracticeView({
     runtimeRef.current = new PracticeRuntime(rotation, config)
     clockStartedRef.current = false
     startWallRef.current = 0
+    castCountRef.current = 0
     setClockStarted(false)
     const initial = createInitialSwapActive(keybinds)
     swapActiveRef.current = initial
@@ -149,6 +169,7 @@ export function PracticeView({
       }
       const s = rt.getSnapshot()
       syncSwapFromSnapshot(s)
+      playNewCasts(s.events)
       setSnap(s)
       if (s.finished) {
         setRunning(false)

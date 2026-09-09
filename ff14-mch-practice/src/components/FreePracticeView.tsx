@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { playSkillCastSfx } from '../audio/castSfx'
 import { getSkill } from '../data/skills'
 import {
   afterSuccessfulCast,
@@ -52,6 +53,10 @@ function swapActiveFromFreeEvents(
   return active
 }
 
+function countCasts(events: FreeScoreEvent[]): number {
+  return events.reduce((n, e) => (e.type === 'cast' ? n + 1 : n), 0)
+}
+
 export function FreePracticeView({
   jobId,
   jobNameJa,
@@ -67,6 +72,7 @@ export function FreePracticeView({
   const startWallRef = useRef<number>(0)
   const onFinishRef = useRef(onFinish)
   onFinishRef.current = onFinish
+  const castCountRef = useRef(0)
   const swapActiveRef = useRef<Record<string, string>>(
     createInitialSwapActive(keybinds),
   )
@@ -98,6 +104,16 @@ export function FreePracticeView({
     setSwapActive(next)
   }
 
+  function playNewCasts(events: FreeScoreEvent[]) {
+    const n = countCasts(events)
+    if (n > castCountRef.current) {
+      for (let i = castCountRef.current; i < n; i++) {
+        playSkillCastSfx()
+      }
+      castCountRef.current = n
+    }
+  }
+
   function ensureRuntime() {
     if (!runtimeRef.current) {
       const rotation = createFreePracticeRotation(jobId, gcdMs)
@@ -109,6 +125,7 @@ export function FreePracticeView({
   function beginCountdown() {
     const rt = ensureRuntime()
     rt.reset()
+    castCountRef.current = 0
     const initial = createInitialSwapActive(keybinds)
     swapActiveRef.current = initial
     setSwapActive(initial)
@@ -138,6 +155,7 @@ export function FreePracticeView({
     if (countdown <= 0) {
       const rt = ensureRuntime()
       rt.beginRecording()
+      castCountRef.current = 0
       startWallRef.current = performance.now()
       setPhase('recording')
       setSnap(rt.getSnapshot())
@@ -160,6 +178,7 @@ export function FreePracticeView({
       rt.advanceTo(elapsed)
       const s = rt.getSnapshot()
       syncSwap(s)
+      playNewCasts(s.events)
       setSnap(s)
       raf = requestAnimationFrame(loop)
     }
@@ -201,6 +220,7 @@ export function FreePracticeView({
     rt.handleInput(skillId)
     const after = rt.getSnapshot()
     syncSwap(after)
+    playNewCasts(after.events)
     setSnap(after)
   }
 
