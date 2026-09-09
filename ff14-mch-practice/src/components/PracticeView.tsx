@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { playSkillCastSfx } from '../audio/castSfx'
+import { useCastFx } from '../audio/useCastFx'
 import { getSkill } from '../data/skills'
 import {
   afterSuccessfulCast,
@@ -67,6 +67,7 @@ export function PracticeView({
   const onFinishRef = useRef(onFinish)
   onFinishRef.current = onFinish
   const castCountRef = useRef(0)
+  const castFx = useCastFx()
   const swapActiveRef = useRef<Record<string, string>>(
     createInitialSwapActive(keybinds),
   )
@@ -104,10 +105,13 @@ export function PracticeView({
   function playNewCasts(events: ScoreEvent[]) {
     const n = countSuccess(events)
     if (n > castCountRef.current) {
-      // 予約発火で複数増えることは通常ないが、差分分鳴らす
+      const successes = events.filter((e) => e.type === 'success')
+      const ids: string[] = []
       for (let i = castCountRef.current; i < n; i++) {
-        playSkillCastSfx()
+        const id = successes[i]?.skillId
+        if (id) ids.push(id)
       }
+      castFx.triggerCasts(ids)
       castCountRef.current = n
     }
   }
@@ -144,6 +148,7 @@ export function PracticeView({
     clockStartedRef.current = false
     startWallRef.current = 0
     castCountRef.current = 0
+    castFx.reset()
     setClockStarted(false)
     const initial = createInitialSwapActive(keybinds)
     swapActiveRef.current = initial
@@ -298,7 +303,12 @@ export function PracticeView({
           <p className="queue muted">予約なし</p>
         )}
         {snap.lastFeedback ? (
-          <p className="feedback">{snap.lastFeedback}</p>
+          <p
+            key={castFx.feedbackPulseKey}
+            className={`feedback ${castFx.feedbackPulseKey > 0 ? 'cast-pulse' : ''}`}
+          >
+            {snap.lastFeedback}
+          </p>
         ) : (
           <p className="feedback muted">入力待ち</p>
         )}
@@ -425,11 +435,12 @@ export function PracticeView({
           const onCd =
             (cd?.remainingMs ?? 0) > 0 &&
             (skill.charges == null || (cd?.charges ?? 0) <= 0)
+          const isFlashing = castFx.flashSkillId === skill.id
           return (
             <button
-              key={`${partner ? slotIdFor(skill.id, partner) : skill.id}-${index}`}
+              key={`${partner ? slotIdFor(skill.id, partner) : skill.id}-${index}${isFlashing ? `-${castFx.flashKey}` : ''}`}
               type="button"
-              className={`hotbar-btn ${isNext ? 'next' : ''} ${partner ? 'swappable' : ''} ${onCd ? 'on-cd' : ''}`}
+              className={`hotbar-btn ${isNext ? 'next' : ''} ${partner ? 'swappable' : ''} ${onCd ? 'on-cd' : ''} ${isFlashing ? 'cast-flash' : ''}`}
               onClick={() => clickSkill(skill.id)}
             >
               <span className="hotbar-name">{skill.nameJa}</span>

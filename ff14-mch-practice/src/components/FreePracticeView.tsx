@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { playSkillCastSfx } from '../audio/castSfx'
+import { useCastFx } from '../audio/useCastFx'
 import { getSkill } from '../data/skills'
 import {
   afterSuccessfulCast,
@@ -73,6 +73,7 @@ export function FreePracticeView({
   const onFinishRef = useRef(onFinish)
   onFinishRef.current = onFinish
   const castCountRef = useRef(0)
+  const castFx = useCastFx()
   const swapActiveRef = useRef<Record<string, string>>(
     createInitialSwapActive(keybinds),
   )
@@ -107,9 +108,13 @@ export function FreePracticeView({
   function playNewCasts(events: FreeScoreEvent[]) {
     const n = countCasts(events)
     if (n > castCountRef.current) {
+      const casts = events.filter((e) => e.type === 'cast')
+      const ids: string[] = []
       for (let i = castCountRef.current; i < n; i++) {
-        playSkillCastSfx()
+        const id = casts[i]?.skillId
+        if (id) ids.push(id)
       }
+      castFx.triggerCasts(ids)
       castCountRef.current = n
     }
   }
@@ -126,6 +131,7 @@ export function FreePracticeView({
     const rt = ensureRuntime()
     rt.reset()
     castCountRef.current = 0
+    castFx.reset()
     const initial = createInitialSwapActive(keybinds)
     swapActiveRef.current = initial
     setSwapActive(initial)
@@ -156,6 +162,7 @@ export function FreePracticeView({
       const rt = ensureRuntime()
       rt.beginRecording()
       castCountRef.current = 0
+      castFx.reset()
       startWallRef.current = performance.now()
       setPhase('recording')
       setSnap(rt.getSnapshot())
@@ -350,7 +357,12 @@ export function FreePracticeView({
               <p className="queue muted">予約なし</p>
             )}
             {view.lastFeedback ? (
-              <p className="feedback">{view.lastFeedback}</p>
+              <p
+                key={castFx.feedbackPulseKey}
+                className={`feedback ${castFx.feedbackPulseKey > 0 ? 'cast-pulse' : ''}`}
+              >
+                {view.lastFeedback}
+              </p>
             ) : (
               <p className="feedback muted">入力待ち</p>
             )}
@@ -489,11 +501,12 @@ export function FreePracticeView({
               const onCd =
                 (cd?.remainingMs ?? 0) > 0 &&
                 (skill.charges == null || (cd?.charges ?? 0) <= 0)
+              const isFlashing = castFx.flashSkillId === skill.id
               return (
                 <button
-                  key={`${partner ? slotIdFor(skill.id, partner) : skill.id}-${index}`}
+                  key={`${partner ? slotIdFor(skill.id, partner) : skill.id}-${index}${isFlashing ? `-${castFx.flashKey}` : ''}`}
                   type="button"
-                  className={`hotbar-btn ${partner ? 'swappable' : ''} ${onCd ? 'on-cd' : ''} ${phase !== 'recording' ? 'disabled-look' : ''}`}
+                  className={`hotbar-btn ${partner ? 'swappable' : ''} ${onCd ? 'on-cd' : ''} ${phase !== 'recording' ? 'disabled-look' : ''} ${isFlashing ? 'cast-flash' : ''}`}
                   onClick={() => clickSkill(skill.id)}
                   disabled={phase !== 'recording'}
                 >
